@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21225" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="BYZ-38-t0r">
+    <device id="retina6_0" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21207"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="tne-QT-ifu">
+            <objects>
+                <viewController id="BYZ-38-t0r" customClass="ViewController" customModule="GPUImage4" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
+                        <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4ub-gV-s7k" customClass="MetalView" customModule="GPUImage4" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="159.66666666666663" width="390" height="585"/>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <constraints>
+                                    <constraint firstAttribute="width" secondItem="4ub-gV-s7k" secondAttribute="height" multiplier="1:1.5" id="2Ty-rX-5XR"/>
+                                </constraints>
+                            </view>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="External Texture" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YBj-1c-dB8">
+                                <rect key="frame" x="107.66666666666669" y="91" width="175" height="29"/>
+                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="24"/>
+                                <color key="textColor" red="0.2470588088" green="0.2470588088" blue="0.2470588088" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="4ub-gV-s7k" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" constant="30" id="GQ2-qG-ruE"/>
+                            <constraint firstItem="YBj-1c-dB8" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="O0E-Bm-n39"/>
+                            <constraint firstItem="4ub-gV-s7k" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" id="Xaa-5O-Xih"/>
+                            <constraint firstItem="YBj-1c-dB8" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="44" id="jBT-3i-yi1"/>
+                            <constraint firstItem="4ub-gV-s7k" firstAttribute="trailing" secondItem="6Tk-OE-BBY" secondAttribute="trailing" id="q9Z-83-euq"/>
+                        </constraints>
+                    </view>
+                    <connections>
+                        <outlet property="metalV" destination="4ub-gV-s7k" id="08r-G0-mya"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="21.538461538461537" y="3.5545023696682461"/>
+        </scene>
+    </scenes>
+    <resources>
+        <systemColor name="systemBackgroundColor">
+            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+        </systemColor>
+    </resources>
+</document>
