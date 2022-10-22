@@ -14,7 +14,8 @@ class ViewController: UIViewController {
     var session: CameraSession?
     var texture: MTLTexture?
     var textureIndex = 0
-    
+    var latestCameraTexture: UnsafeMutableRawPointer?
+
     lazy var displayLink: CADisplayLink = {
         CADisplayLink.init(target: self, selector: #selector(enterFrame))
     }()
@@ -67,23 +68,25 @@ extension ViewController: CameraSessionDelegate {
         guard let canvas = self.wgpuCanvas else {
             return
         }
+        self.texture = textures[0]
+        let tex_pointer = Unmanaged.passRetained( self.texture!).toOpaque()
+        if tex_pointer != latestCameraTexture {
+            print("----------- \(tex_pointer)")
 
+            latestCameraTexture = tex_pointer
+        }
+        
         if textureIndex == 0 {
             textureIndex += 1
 
-            self.texture = textures[0]
-            let tex_pointer = Unmanaged.passUnretained( self.texture!).toOpaque()
-            let external_tex = external_texture_obj(width: Int32(self.texture!.width), height: Int32(self.texture!.height), raw: tex_pointer )
-
-            print("\(external_tex)")
-
-//            set_external_texture(canvas, external_tex)
-            set_external_texture2(canvas, tex_pointer, Int32(self.texture!.width), Int32(self.texture!.height))
+            displayLink.isPaused = true
+            set_external_texture(canvas, tex_pointer, Int32(self.texture!.width), Int32(self.texture!.height))
+            displayLink.isPaused = false
         }
-       
+
     }
     
-    func metalCameraSession(_ cameraSession: CameraSession, didUpdateState state: CameraSessionState, error: MetalCameraSessionError?) {
+    func metalCameraSession(_ cameraSession: CameraSession, didUpdateState state: CameraSessionState, error: CameraSessionError?) {
         
         if error == .captureSessionRuntimeError {
             /**

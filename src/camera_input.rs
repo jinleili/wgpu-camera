@@ -8,37 +8,33 @@ pub struct CameraInput {
 }
 
 impl CameraInput {
-    pub fn new(app_surface: &AppSurface, external_tex: &crate::ExternalTextureObj) -> Self {
+    pub fn new(app_surface: &AppSurface) -> Self {
         let config = &app_surface.config;
         let device = &app_surface.device;
-        let format = wgpu::TextureFormat::Bgra8Unorm;
-        let texture_extent = wgpu::Extent3d {
-            width: external_tex.width as u32,
-            height: external_tex.height as u32,
-            depth_or_array_layers: 1,
-        };
         let texture = device.create_texture(&wgpu::TextureDescriptor {
             label: None,
-            size: texture_extent,
+            size: wgpu::Extent3d {
+                width: 1,
+                height: 1,
+                depth_or_array_layers: 1,
+            },
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
-            format,
+            format: config.format,
             usage: wgpu::TextureUsages::TEXTURE_BINDING,
         });
+        // unsafe {
+        //     texture.as_hal_mut::<hal::api::Metal, _>(|hal| {
+        //         hal.map(|hal_tex| {
+        //             std::mem::swap(
+        //                 hal_tex.raw_handle(),
+        //                 &mut std::mem::transmute(external_tex.raw),
+        //             )
+        //         });
+        //     });
+        // }
 
-        unsafe {
-            texture.as_hal_mut::<hal::api::Metal, _>(|hal| {
-                hal.map(|hal_tex| {
-                    std::mem::swap(
-                        hal_tex.raw_handle(),
-                        &mut std::mem::transmute(external_tex.raw),
-                    )
-                });
-            });
-        }
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
@@ -71,25 +67,24 @@ impl CameraInput {
             multiview: None,
         });
 
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &pipeline.get_bind_group_layout(0),
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
-                },
-            ],
-            label: None,
-        });
+        let bind_group = create_bind_group(device, &pipeline.get_bind_group_layout(0), &texture);
 
         Self {
             bind_group,
             pipeline,
         }
+    }
+
+    pub fn update_external_texture(
+        &mut self,
+        app_surface: &AppSurface,
+        external_texture: wgpu::Texture,
+    ) {
+        self.bind_group = create_bind_group(
+            &app_surface.device,
+            &self.pipeline.get_bind_group_layout(0),
+            &external_texture,
+        );
     }
 }
 
@@ -122,4 +117,27 @@ impl crate::Camera for CameraInput {
         queue.submit(Some(encoder.finish()));
         frame.present();
     }
+}
+
+fn create_bind_group(
+    device: &wgpu::Device,
+    layout: &wgpu::BindGroupLayout,
+    texture: &wgpu::Texture,
+) -> wgpu::BindGroup {
+    let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+    let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+    device.create_bind_group(&wgpu::BindGroupDescriptor {
+        layout,
+        entries: &[
+            wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&texture_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 1,
+                resource: wgpu::BindingResource::Sampler(&sampler),
+            },
+        ],
+        label: None,
+    })
 }

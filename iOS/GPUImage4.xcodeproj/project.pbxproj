@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		ADD6E02929015DB500604039 /* libgpu_image4.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADD6E02829015DB500604039 /* libgpu_image4.a */; };
 		ADD6E04329023D4B00604039 /* CameraSessionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD6E04029023D4B00604039 /* CameraSessionTypes.swift */; };
-		ADD6E04429023D4B00604039 /* CameraCaptureDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD6E04129023D4B00604039 /* CameraCaptureDevice.swift */; };
 		ADD6E04529023D4B00604039 /* CameraSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD6E04229023D4B00604039 /* CameraSession.swift */; };
 		ADEE4C952901532000C84A32 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADEE4C942901532000C84A32 /* AppDelegate.swift */; };
 		ADEE4C972901532000C84A32 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADEE4C962901532000C84A32 /* SceneDelegate.swift */; };
@@ -23,7 +22,6 @@
 /* Begin PBXFileReference section */
 		ADD6E02829015DB500604039 /* libgpu_image4.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libgpu_image4.a; path = "../target/aarch64-apple-ios/debug/libgpu_image4.a"; sourceTree = "<group>"; };
 		ADD6E04029023D4B00604039 /* CameraSessionTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraSessionTypes.swift; sourceTree = "<group>"; };
-		ADD6E04129023D4B00604039 /* CameraCaptureDevice.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraCaptureDevice.swift; sourceTree = "<group>"; };
 		ADD6E04229023D4B00604039 /* CameraSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraSession.swift; sourceTree = "<group>"; };
 		ADEE4C912901532000C84A32 /* GPUImage4.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GPUImage4.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ADEE4C942901532000C84A32 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -53,7 +51,6 @@
 		ADD6E03F29023D1700604039 /* camera */ = {
 			isa = PBXGroup;
 			children = (
-				ADD6E04129023D4B00604039 /* CameraCaptureDevice.swift */,
 				ADD6E04229023D4B00604039 /* CameraSession.swift */,
 				ADD6E04029023D4B00604039 /* CameraSessionTypes.swift */,
 			);
@@ -176,7 +173,6 @@
 			files = (
 				ADEE4CAD290153A100C84A32 /* MetalView.swift in Sources */,
 				ADD6E04529023D4B00604039 /* CameraSession.swift in Sources */,
-				ADD6E04429023D4B00604039 /* CameraCaptureDevice.swift in Sources */,
 				ADD6E04329023D4B00604039 /* CameraSessionTypes.swift in Sources */,
 				ADEE4C992901532000C84A32 /* ViewController.swift in Sources */,
 				ADEE4C952901532000C84A32 /* AppDelegate.swift in Sources */,
@@ -334,8 +330,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -365,8 +360,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

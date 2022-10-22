@@ -19,22 +19,45 @@ pub fn enter_frame(obj: *mut libc::c_void) {
 }
 
 #[no_mangle]
-pub fn set_external_texture(obj: *mut libc::c_void, external_texture: crate::ExternalTextureObj) {
-    let obj = unsafe { &mut *(obj as *mut WgpuCanvas) };
-    println!("{:?}", external_texture.raw);
-    obj.set_external_texture(external_texture);
-}
-
-#[no_mangle]
-pub fn set_external_texture2(
+pub fn set_external_texture(
     obj: *mut libc::c_void,
     raw: *mut std::ffi::c_void,
     width: i32,
     height: i32,
 ) {
     let obj = unsafe { &mut *(obj as *mut WgpuCanvas) };
-    let external_tex = crate::ExternalTextureObj { width, height, raw };
-    println!("{:?}, {}, {}", raw, width, height);
-    println!("{:?}", external_tex.raw);
-    obj.set_external_texture(external_tex);
+    let texture_extent = wgpu::Extent3d {
+        width: width as u32,
+        height: height as u32,
+        depth_or_array_layers: 1,
+    };
+    let external_texture = unsafe {
+        let hal_tex = <hal::api::Metal as hal::Api>::Device::texture_from_raw(
+            std::mem::transmute(raw),
+            mtl::MTLPixelFormat::BGRA8Unorm,
+            mtl::MTLTextureType::D2,
+            1,
+            1,
+            hal::CopyExtent {
+                width: texture_extent.width,
+                height: texture_extent.height,
+                depth: 1,
+            },
+        );
+        obj.app_surface
+            .device
+            .create_texture_from_hal::<hal::api::Metal>(
+                hal_tex,
+                &wgpu::TextureDescriptor {
+                    label: None,
+                    size: texture_extent,
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Bgra8Unorm,
+                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
+                },
+            )
+    };
+    obj.set_external_texture(external_texture);
 }

@@ -7,15 +7,6 @@
 
 import AVFoundation
 
-/**
- States of capturing session
- 
- - Ready:     Ready to start capturing
- - Streaming: Capture in progress
- - Stopped:   Capturing stopped
- - Waiting:   Waiting to get access to hardware
- - Error:     An error has occured
- */
 public enum CameraSessionState {
     case ready
     case streaming
@@ -41,7 +32,7 @@ public enum CameraPixelFormat {
 /**
  Streaming error
  */
-public enum MetalCameraSessionError: Error {
+public enum CameraSessionError: Error {
     /**
      * Streaming errors
      *///
@@ -60,12 +51,7 @@ public enum MetalCameraSessionError: Error {
     case failedToGetImageBuffer
     case failedToCreateTextureFromImage
     case failedToRetrieveTimestamp
-    
-    /**
-     Indicates if the error is related to streaming the media.
-     
-     - returns: True if the error is related to streaming, false otherwise
-     */
+   
     public func isStreamingError() -> Bool {
         switch self {
         case .noHardwareAccess, .failedToAddCaptureInputDevice, .failedToAddCaptureOutput, .requestedHardwareNotFound, .inputDeviceNotAvailable, .captureSessionRuntimeError:

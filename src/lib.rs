@@ -1,4 +1,3 @@
-mod examples;
 mod wgpu_canvas;
 use app_surface::AppSurface;
 pub use wgpu_canvas::WgpuCanvas;
