@@ -1,5 +1,11 @@
 target/
 */.DS_STORE
 .idea/
+
+build/
+.gradle/
+# Local configuration file (sdk path, etc)
+local.properties
+
 **/*.so 
 JetpackCompose/
