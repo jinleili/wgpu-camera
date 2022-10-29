@@ -51,7 +51,7 @@ impl CameraInput {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
                 // "../wgsl_preprocessed/edge_detection.wgsl"
-                "../wgsl_preprocessed/cross_hatching.wgsl"
+                "../../wgsl_preprocessed/cross_hatching.wgsl"
             ))),
         });
 

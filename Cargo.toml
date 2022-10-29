@@ -1,22 +1,16 @@
-[package]
-name = "gpu-image4"
-version = "0.1.0"
-authors = ["jinleili"]
+[workspace]
+resolver = "2"
+members = [
+    "gpu-image4",
+    "run-wasm"
+]
+
+[workspace.package]
 edition = "2021"
 rust-version = "1.64"
+authors = ["jinleili"]
 
-[lib]
-crate-type = ["rlib", "staticlib", "cdylib"]
-
-[dependencies]
-bytemuck = { version = "1.12", features = ["derive"] }
-nalgebra-glm = "*"
-image = { version = "0.24", default-features = false }
-png = "0.17"
-log = "0.4"
-noise = { version = "0.7", default-features = false }
-pollster = "0.2"
-rand = { version = "0.7.2" }
+[workspace.dependencies]
 wgpu = "0.14"
 wgc = { package = "wgpu-core", version = "0.14" }
 hal = { package = "wgpu-hal", version = "0.14" }
@@ -26,34 +20,3 @@ hal = { package = "wgpu-hal", version = "0.14" }
 # app-surface = { git = "https://github.com/jinleili/wgpu-on-app", tag = "0.1.2" }
 app-surface = { path = "../idroid/wgpu-on-app/app-surface" }
 idroid = { path = "../idroid/idroid" }
-
-[target.'cfg(any(not(target_os = "ios"), not(target_os = "android")))'.dependencies]
-async-executor = "1.0"
-winit = "0.27.1"
-raw-window-handle = "0.5"
-
-[target.'cfg(any(target_os = "ios", target_os = "macos"))'.dependencies]
-env_logger = "0.9"
-libc = "*"
-mtl = { package = "metal", version = "0.24.0" }
-
-[target.'cfg(target_os = "android")'.dependencies]
-android_logger = "0.10.1"
-jni = "0.19"
-jni_fn = "0.1"
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
-js-sys = "0.3.60"
-wasm-bindgen = "0.2.83"
-wasm-bindgen-futures = "0.4.33"
-web-sys = { version = "0.3.60", features = [
-    "Document",
-    "Navigator",
-    "Node",
-    "NodeList",
-    "HtmlCanvasElement",
-    "Location",
-    "Window",
-    "XmlHttpRequest",
-    "XmlHttpRequestResponseType"
-] }

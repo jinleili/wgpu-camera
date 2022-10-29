@@ -3,11 +3,11 @@ use std::fs::read_to_string;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-const WGSL_FOLDER: &'static str = "wgsl_preprocessed";
+const WGSL_FOLDER: &'static str = "../wgsl_preprocessed";
 
 fn main() -> Result<(), Box<dyn Error>> {
     // 这一行告诉 cargo 如果 /res/ 目录中的内容发生了变化，就重新运行脚本
-    println!("cargo:rerun-if-changed=wgsl/*");
+    println!("cargo:rerun-if-changed=/../wgsl/*");
 
     let shader_files = vec!["edge_detection", "cross_hatching"];
     // panic!("sdf");
@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn regenerate_shader(shader_name: &str) -> Result<(), Box<dyn Error>> {
     let base_dir = env!("CARGO_MANIFEST_DIR");
     let path = PathBuf::from(&base_dir)
-        .join("wgsl")
+        .join("../wgsl")
         .join(format!("{}.wgsl", shader_name));
     let mut out_path = WGSL_FOLDER.to_string();
     out_path += &format!("/{}.wgsl", shader_name.replace("/", "_"));
@@ -77,7 +77,7 @@ fn parse_shader_source(source: &str, output: &mut String, base_path: &str) {
 
 fn get_shader_funcs(key: &str, base_path: &str) -> Option<String> {
     let path = PathBuf::from(base_path)
-        .join("wgsl")
+        .join("../wgsl")
         .join(key.replace('"', ""));
     let shader = match read_to_string(&path) {
         Ok(code) => code,

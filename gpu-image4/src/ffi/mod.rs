@@ -3,10 +3,14 @@ use idroid::{load_texture, AnyTexture};
 use std::fs::File;
 
 pub fn get_a_texture(app_surface: &app_surface::AppSurface) -> (wgpu::Texture, wgpu::Extent3d) {
-    let img_name = "pepper512x512";
+    // let img_name = "pepper512x512";
     // let img_name = "kodim768x512";
-    let img_path = format!("{}/assets/{}.png", &env!("CARGO_MANIFEST_DIR"), img_name);
-    let decoder = png::Decoder::new(File::open(&img_path).unwrap());
+    // let img_path = format!("{}/../assets/{}.png", &env!("CARGO_MANIFEST_DIR"), img_name);
+    // let decoder = png::Decoder::new(File::open(&img_path).unwrap());
+
+    let img_data = include_bytes!("../../../assets/pepper512x512.png");
+    let decoder = png::Decoder::new(std::io::Cursor::new(img_data));
+
     let mut reader = decoder.read_info().unwrap();
     let mut buf = vec![0; reader.output_buffer_size()];
     let info = reader.next_frame(&mut buf).unwrap();

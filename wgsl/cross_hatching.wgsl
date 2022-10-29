@@ -5,10 +5,10 @@
 
 ///#include "func/edge_detection.wgsl"
 
-let threshold_1 = 0.95;
-let threshold_2 = 0.7;
+let threshold_1 = 1.0;
+let threshold_2 = 0.75;
 let threshold_3 = 0.5;
-let threshold_4 = 0.2;
+let threshold_4 = 0.25;
 // How close together hatch lines should be placed
 let density = 10.0;
 let half_density = 5.0;

@@ -1,12 +1,13 @@
 # GPUImage4
 
+```sh
+RUSTFLAGS=--cfg=web_sys_unstable_apis cargo run --release --package run-wasm --
+```
 
 ## **iOS**
 [中文版文档: 与 iOS App 集成](https://jinleili.github.io/learn-wgpu-zh/integration-and-debugging/ios/)
 
 ### Add build target
-
-Since iPhone 5 and later are 64-bit devices, `armv7s-apple-ios` and `armv7-apple-ios` are not required.
 
 ```sh
 # Add iOS device target
@@ -23,7 +24,7 @@ rustup target add aarch64-apple-ios-sim
 Build for iOS device and simulator
 ```sh
 # Use Metal backend
-PREPROCESS_SHADER=true cargo build --target aarch64-apple-ios && cargo build --target <aarch64-apple-ios-sim or x86_64-apple-ios>
+cargo build --target aarch64-apple-ios && cargo build --target <aarch64-apple-ios-sim or x86_64-apple-ios>
 ```
 
 Then, Open `iOS/GPUImage4.xcodeproj` with Xcode and run on iOS device. 
