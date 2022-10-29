@@ -1,6 +1,7 @@
 use crate::camera_input::CameraInput;
 use crate::Camera;
 use app_surface::{AppSurface, SurfaceFrame};
+use idroid::math::Rect;
 
 pub struct WgpuCanvas {
     pub app_surface: AppSurface,
@@ -21,9 +22,9 @@ impl WgpuCanvas {
         instance
     }
 
-    pub fn set_external_texture(&mut self, external_texture: wgpu::Texture) {
+    pub fn set_external_texture(&mut self, external_texture: wgpu::Texture, img_size: (f32, f32)) {
         self.camera_input
-            .update_external_texture(&self.app_surface, external_texture);
+            .update_external_texture(&self.app_surface, external_texture, img_size);
     }
 
     pub fn enter_frame(&mut self) {

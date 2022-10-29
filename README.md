@@ -1,5 +1,6 @@
 # GPUImage4
 
+
 ## **iOS**
 [中文版文档: 与 iOS App 集成](https://jinleili.github.io/learn-wgpu-zh/integration-and-debugging/ios/)
 
@@ -22,7 +23,7 @@ rustup target add aarch64-apple-ios-sim
 Build for iOS device and simulator
 ```sh
 # Use Metal backend
-cargo build --target aarch64-apple-ios && cargo build --target <aarch64-apple-ios-sim or x86_64-apple-ios>
+PREPROCESS_SHADER=true cargo build --target aarch64-apple-ios && cargo build --target <aarch64-apple-ios-sim or x86_64-apple-ios>
 ```
 
 Then, Open `iOS/GPUImage4.xcodeproj` with Xcode and run on iOS device. 

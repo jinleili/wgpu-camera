@@ -18,5 +18,7 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(tex, tex_sampler, vertex.uv) ;
+    let color = textureSample(tex, tex_sampler, vertex.uv);
+    let gray = length(color.rgb);
+    return vec4<f32>(vec3<f32>(step(0.25, fwidth(gray))), 1.0);
 }

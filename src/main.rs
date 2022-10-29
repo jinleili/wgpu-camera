@@ -1,27 +1,27 @@
-#[cfg(any(target_os = "android", target_os = "ios"))]
-fn main() {}
-
-#[cfg(all(not(target_os = "android"), not(target_os = "ios")))]
+#[cfg(any(target_os = "macos", target_os = "window", target_os = "linux"))]
 fn main() {
     use app_surface::AppSurface;
-    use gpu_image3::WgpuCanvas;
+    use gpu_image4::WgpuCanvas;
     use std::time::{Duration, Instant};
     use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
     use winit::event_loop::{ControlFlow, EventLoop};
 
     let events_loop = EventLoop::new();
     let size = winit::dpi::Size::Logical(winit::dpi::LogicalSize {
-        width: 1200.0,
-        height: 800.0,
+        width: 512.0,
+        height: 512.0,
     });
     let builder = winit::window::WindowBuilder::new()
         .with_inner_size(size)
         .with_max_inner_size(size)
         .with_transparent(true)
-        .with_title("wgpu on Desktop");
+        .with_title("GPUImage4 on Desktop");
     let window = builder.build(&events_loop).unwrap();
+    let app_surface = pollster::block_on(AppSurface::new(window));
+    let mut canvas = WgpuCanvas::new(app_surface);
 
-    let mut canvas = WgpuCanvas::new(AppSurface::new(window), 0);
+    let (texture, size) = gpu_image4::ffi::get_a_texture(&canvas.app_surface);
+    canvas.set_external_texture(texture, (size.width as f32, size.height as f32));
 
     let mut last_update_inst = Instant::now();
     let target_frametime = Duration::from_secs_f64(1.0 / 60.0);
@@ -66,23 +66,6 @@ fn main() {
                 | WindowEvent::CloseRequested => {
                     *control_flow = winit::event_loop::ControlFlow::Exit;
                 }
-                WindowEvent::KeyboardInput {
-                    input:
-                        KeyboardInput {
-                            virtual_keycode: Some(key),
-                            state: ElementState::Pressed,
-                            ..
-                        },
-                    ..
-                } => match key {
-                    VirtualKeyCode::Key1 => canvas.change_example(1),
-                    VirtualKeyCode::Key2 => canvas.change_example(2),
-                    VirtualKeyCode::Key3 => canvas.change_example(3),
-                    VirtualKeyCode::Key4 => canvas.change_example(4),
-                    VirtualKeyCode::Key5 => canvas.change_example(5),
-
-                    _ => canvas.change_example(0),
-                },
                 _ => {}
             },
             Event::RedrawRequested(_) => {

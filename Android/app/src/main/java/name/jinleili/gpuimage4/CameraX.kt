@@ -59,7 +59,7 @@ class CameraX(
         return previewView
     }
 
-     fun capturePhoto() =owner.lifecycleScope.launch{
+    fun capturePhoto() =owner.lifecycleScope.launch{
         val imageCapture = imageCapture ?: return@launch
 
         imageCapture.takePicture(ContextCompat.getMainExecutor(context), object :
@@ -83,7 +83,6 @@ class CameraX(
                 Log.i(TAG, "onCaptureSuccess: onError")
             }
         })
-
 
     }
 

@@ -1,5 +1,6 @@
 use crate::wgpu_canvas::WgpuCanvas;
 use app_surface::{AppSurface, IOSViewObj};
+use idroid::math::{Position, Rect};
 
 #[no_mangle]
 pub fn create_wgpu_canvas(ios_obj: IOSViewObj) -> *mut libc::c_void {
@@ -26,6 +27,17 @@ pub fn set_external_texture(
     height: i32,
 ) {
     let obj = unsafe { &mut *(obj as *mut WgpuCanvas) };
+    // let w_ratio = obj.app_surface.config.width as f32 / width as f32;
+    // let h_ratio = obj.app_surface.config.height as f32 / height as f32;
+    // let (w, h) = if h_ratio > w_ratio {
+    //     let w = obj.app_surface.config.width as f32 / (width as f32 * h_ratio);
+    //     (w, 1.0)
+    // } else {
+    //     let h = obj.app_surface.config.height as f32 / (height as f32 * w_ratio);
+    //     (1.0, h)
+    // };
+    // let tex_rect = Rect::new(w, h, (0.5, 0.5).into());
+
     let texture_extent = wgpu::Extent3d {
         width: width as u32,
         height: height as u32,
@@ -59,5 +71,5 @@ pub fn set_external_texture(
                 },
             )
     };
-    obj.set_external_texture(external_texture);
+    obj.set_external_texture(external_texture, (width as f32, height as f32));
 }

@@ -9,3 +9,4 @@ local.properties
 
 **/*.so 
 JetpackCompose/
+debug.xcodeproj/

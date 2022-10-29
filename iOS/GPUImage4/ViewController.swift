@@ -64,7 +64,7 @@ class ViewController: UIViewController {
 
 // MARK: - MetalCameraSessionDelegate
 extension ViewController: CameraSessionDelegate {
-    func metalCameraSession(_ session: CameraSession, didReceiveFrameAsTextures textures: [MTLTexture], withTimestamp timestamp: Double) {
+    func cameraSession(_ session: CameraSession, didReceiveFrameAsTextures textures: [MTLTexture], withTimestamp timestamp: Double) {
         guard let canvas = self.wgpuCanvas else {
             return
         }
@@ -86,7 +86,7 @@ extension ViewController: CameraSessionDelegate {
 
     }
     
-    func metalCameraSession(_ cameraSession: CameraSession, didUpdateState state: CameraSessionState, error: CameraSessionError?) {
+    func cameraSession(_ cameraSession: CameraSession, didUpdateState state: CameraSessionState, error: CameraSessionError?) {
         
         if error == .captureSessionRuntimeError {
             /**

@@ -1,7 +1,7 @@
 use super::Example;
 use app_surface::{AppSurface, SurfaceFrame};
 
-use zerocopy::{AsBytes, FromBytes};
+use bytemuck::{Pod, Zeroable};
 
 use std::cell::RefCell;
 use std::cmp::PartialEq;
@@ -9,7 +9,7 @@ use std::f32::consts::FRAC_PI_2;
 use std::rc::Rc;
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, AsBytes, FromBytes)]
+#[derive(Clone, Copy, Debug, Pod, Zeroable)]
 struct TurningUniform {
     radius: f32,
     angle: f32,
