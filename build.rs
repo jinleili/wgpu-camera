@@ -44,7 +44,7 @@ fn regenerate_shader(shader_name: &str) -> Result<(), Box<dyn Error>> {
 }
 
 fn parse_shader_source(source: &str, output: &mut String, base_path: &str) {
-    let include: &str = "#include ";
+    let include: &str = "///#include ";
     for line in source.lines() {
         if line.starts_with(include) {
             let imports = line[include.len()..].split(',');

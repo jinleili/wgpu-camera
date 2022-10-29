@@ -50,7 +50,8 @@ impl CameraInput {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
-                "../wgsl_preprocessed/edge_detection.wgsl"
+                // "../wgsl_preprocessed/edge_detection.wgsl"
+                "../wgsl_preprocessed/cross_hatching.wgsl"
             ))),
         });
 
