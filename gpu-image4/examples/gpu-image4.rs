@@ -45,8 +45,8 @@ pub fn run() {
 async fn create_instance() -> (EventLoop<()>, WgpuCanvas) {
     let event_loop = EventLoop::new();
     let size = winit::dpi::Size::Logical(winit::dpi::LogicalSize {
-        width: 512.0,
-        height: 512.0,
+        width: 256.0,
+        height: 256.0,
     });
     let builder = winit::window::WindowBuilder::new()
         .with_inner_size(size)
@@ -65,7 +65,7 @@ async fn create_instance() -> (EventLoop<()>, WgpuCanvas) {
             .and_then(|doc| {
                 match doc.get_element_by_id("gpu-image4-container") {
                     Some(dst) => {
-                        window.set_inner_size(PhysicalSize::new(450, 400));
+                        window.set_inner_size(PhysicalSize::new(768, 500));
                         let _ = dst.append_child(&web_sys::Element::from(window.canvas()));
                     }
                     None => {

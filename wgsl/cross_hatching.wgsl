@@ -5,14 +5,6 @@
 
 ///#include "func/edge_detection.wgsl"
 
-let threshold_1 = 1.0;
-let threshold_2 = 0.75;
-let threshold_3 = 0.5;
-let threshold_4 = 0.25;
-// How close together hatch lines should be placed
-let density = 10.0;
-let half_density = 5.0;
-
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(tex, tex_sampler, vertex.uv);
@@ -23,15 +15,16 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let frag_coord = vertex.position.xy;
 
     // https://www.shadertoy.com/view/MdX3Dr
-    if (gray < threshold_1) && ((frag_coord.x + frag_coord.y) % density == 0.0) {
+    // How close together hatch lines should be placed
+    if (gray < 1.0) && ((frag_coord.x + frag_coord.y) % 10.0 == 0.0) {
         frag_color = vec3<f32>(gray);
-    } else if (gray < threshold_2) && ((frag_coord.x - frag_coord.y) % density == 0.0) {
+    } else if (gray < 0.75) && ((frag_coord.x - frag_coord.y) % 10.0 == 0.0) {
         frag_color = vec3<f32>(gray);
     }
      
-    if (gray < threshold_3) && ((frag_coord.x + frag_coord.y - half_density) % density  == 0.0) {
+    if (gray < 0.5) && ((frag_coord.x + frag_coord.y - 5.0) % 10.0  == 0.0) {
         frag_color = vec3<f32>(gray);
-    } else if (gray < threshold_4) && ((frag_coord.x - frag_coord.y - half_density) % density  == 0.0) {
+    } else if (gray < 0.25) && ((frag_coord.x - frag_coord.y - 5.0) % 10.0  == 0.0) {
         frag_color = vec3<f32>(gray);
     }
 

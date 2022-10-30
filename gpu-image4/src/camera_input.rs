@@ -51,7 +51,8 @@ impl CameraInput {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
                 // "../wgsl_preprocessed/edge_detection.wgsl"
-                "../../wgsl_preprocessed/cross_hatching.wgsl"
+                // "../../wgsl_preprocessed/cross_hatching.wgsl"
+                "../../wgsl_preprocessed/ascii_art.wgsl"
             ))),
         });
 
@@ -65,7 +66,8 @@ impl CameraInput {
                 wgpu::ShaderStages::VERTEX,
                 wgpu::ShaderStages::FRAGMENT,
                 wgpu::ShaderStages::FRAGMENT,
-            ]);
+            ])
+            .with_color_format(app_surface.config.format);
 
         let view_node = view_builder.build(device);
 

@@ -6,11 +6,11 @@ use std::path::PathBuf;
 const WGSL_FOLDER: &'static str = "../wgsl_preprocessed";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // 这一行告诉 cargo 如果 /res/ 目录中的内容发生了变化，就重新运行脚本
+    // 这一行告诉 cargo 如果 /wgsl/ 目录中的内容发生了变化，就重新运行脚本
     println!("cargo:rerun-if-changed=/../wgsl/*");
 
-    let shader_files = vec!["edge_detection", "cross_hatching"];
-    // panic!("sdf");
+    let shader_files = vec!["edge_detection", "cross_hatching", "ascii_art"];
+
     // 创建目录
     std::fs::create_dir_all(WGSL_FOLDER)?;
     for name in shader_files {
