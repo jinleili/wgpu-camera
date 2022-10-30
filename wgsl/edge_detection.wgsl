@@ -1,7 +1,8 @@
-///#include "base.vs.wgsl"
+struct InputParams {
+    temp: f32,
+};
 
-@group(0) @binding(1) var tex: texture_2d<f32>;
-@group(0) @binding(2) var tex_sampler: sampler;
+///#include "common/group0+vs.wgsl"
 
 ///#include "func/edge_detection.wgsl"
 

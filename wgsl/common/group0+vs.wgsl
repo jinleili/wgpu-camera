@@ -3,10 +3,10 @@ struct VertexOutput {
     @builtin(position) position: vec4<f32>,
 };
 
-struct MVPMatUniform {
+struct UniformData {
     mvp: mat4x4<f32>,
 };
-@group(0) @binding(0) var<uniform> mat_uniform: MVPMatUniform;
+@group(0) @binding(0) var<uniform> mat_uniform: UniformData;
 
 @vertex
 fn vs_main(
@@ -18,3 +18,7 @@ fn vs_main(
     out.uv = texCoord;
     return out;
 }
+
+@group(0) @binding(1) var<storage> params : array<InputParams>;
+@group(0) @binding(2) var tex: texture_2d<f32>;
+@group(0) @binding(3) var tex_sampler: sampler;

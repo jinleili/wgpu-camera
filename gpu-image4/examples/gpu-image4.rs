@@ -45,8 +45,8 @@ pub fn run() {
 async fn create_instance() -> (EventLoop<()>, WgpuCanvas) {
     let event_loop = EventLoop::new();
     let size = winit::dpi::Size::Logical(winit::dpi::LogicalSize {
-        width: 256.0,
-        height: 256.0,
+        width: 786.0,
+        height: 512.0,
     });
     let builder = winit::window::WindowBuilder::new()
         .with_inner_size(size)

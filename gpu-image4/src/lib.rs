@@ -9,6 +9,11 @@ pub mod ffi;
 #[cfg(all(target_os = "android", target_os = "ios"))]
 pub use ffi::*;
 
+mod shader_manager;
+use shader_manager::ShaderManager;
+mod render_node;
+use render_node::RenderNode;
+
 #[repr(C)]
 pub struct ExternalTextureObj {
     pub width: i32,
@@ -21,4 +26,8 @@ pub trait Camera {
     fn enter_frame(&mut self, app_surface: &AppSurface);
 }
 
-mod camera_input;
+enum FilterType {
+    AsciiArt,
+    CrollHatch,
+    EdgeDetection,
+}

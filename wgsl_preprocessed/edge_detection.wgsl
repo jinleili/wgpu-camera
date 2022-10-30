@@ -1,12 +1,16 @@
+struct InputParams {
+    temp: f32,
+};
+
 struct VertexOutput {
     @location(0) uv: vec2<f32>,
     @builtin(position) position: vec4<f32>,
 };
 
-struct MVPMatUniform {
+struct UniformData {
     mvp: mat4x4<f32>,
 };
-@group(0) @binding(0) var<uniform> mat_uniform: MVPMatUniform;
+@group(0) @binding(0) var<uniform> mat_uniform: UniformData;
 
 @vertex
 fn vs_main(
@@ -19,8 +23,9 @@ fn vs_main(
     return out;
 }
 
-@group(0) @binding(1) var tex: texture_2d<f32>;
-@group(0) @binding(2) var tex_sampler: sampler;
+@group(0) @binding(1) var<storage> params : array<InputParams>;
+@group(0) @binding(2) var tex: texture_2d<f32>;
+@group(0) @binding(3) var tex_sampler: sampler;
 
 fn edge_detection(luminance: f32, step_val: f32) -> vec3<f32> {
     return vec3<f32>(step(step_val, fwidth(luminance)));
