@@ -1,24 +1,23 @@
-use crate::{FilterType, RenderNode};
+use crate::{render_node::RenderNode, shader_manager::ShaderManager, FilterType};
 use app_surface::{AppSurface, SurfaceFrame};
-use idroid::node::{ViewNode, ViewNodeBuilder};
 use idroid::vertex::PosTex;
 use idroid::{geometry::Plane, math::Rect};
 use idroid::{BufferObj, MVPUniform};
 
 pub struct WgpuCanvas {
     pub app_surface: AppSurface,
-    shader_manager: crate::ShaderManager,
+    shader_manager: ShaderManager,
     mvp_buffer: BufferObj,
     params_buffer: BufferObj,
-    viewport: (f32, f32, f32, f32),
     view_node: Option<RenderNode>,
-    filter_ty: FilterType,
+    current_filter: FilterType,
+    img_size: (f32, f32),
 }
 
 #[allow(dead_code)]
 impl WgpuCanvas {
     pub fn new(app_surface: AppSurface) -> Self {
-        let shader_manager = crate::ShaderManager::new(&app_surface.device);
+        let shader_manager = ShaderManager::new(&app_surface.device);
         let screen_mvp = idroid::utils::matrix_helper::fullscreen_mvp((&app_surface.config).into());
         let mvp_buffer = BufferObj::create_uniform_buffer(
             &app_surface.device,
@@ -36,20 +35,14 @@ impl WgpuCanvas {
         );
         params_buffer.read_only = true;
 
-        let viewport = (
-            0.0,
-            0.0,
-            app_surface.config.width as f32,
-            app_surface.config.height as f32,
-        );
         let instance = WgpuCanvas {
             app_surface,
             shader_manager,
             mvp_buffer,
             params_buffer,
-            viewport,
             view_node: None,
-            filter_ty: FilterType::AsciiArt,
+            current_filter: FilterType::AsciiArt,
+            img_size: (0.0, 0.0),
         };
         if let Some(callback) = instance.app_surface.callback_to_app {
             callback(0);
@@ -57,16 +50,41 @@ impl WgpuCanvas {
         instance
     }
 
-    pub fn update_filter_params(&self, img_size: (f32, f32)) {
-        let params_data = match self.filter_ty {
+    pub fn set_filter(&mut self, ty: crate::FilterType, input_param: f32) {
+        self.create_render_node_if_needed();
+        self.view_node.as_mut().map(|node| {
+            node.change_filter(&self.app_surface, self.shader_manager.get_shader_ref(ty));
+            self.current_filter = ty;
+        });
+        self.update_filter_params(input_param);
+    }
+
+    pub fn change_filter_param(&self, input_param: f32) {
+        self.update_filter_params(input_param);
+    }
+
+    pub fn update_filter_params(&self, input_param: f32) {
+        let params_data = match self.current_filter {
             FilterType::AsciiArt => {
-                let ascii_width = 8.0;
+                let ascii_width = if input_param == 0.0 {
+                    8.0 * self.app_surface.scale_factor
+                } else {
+                    input_param
+                };
                 vec![
-                    1.0 / img_size.0 * ascii_width,
-                    1.0 / img_size.1 * ascii_width,
+                    1.0 / self.img_size.0 * ascii_width,
+                    1.0 / self.img_size.1 * ascii_width,
                     ascii_width,
                     ascii_width / 2.0,
                 ]
+            }
+            FilterType::CrossHatch => {
+                let density = if input_param == 0.0 {
+                    10.0 * self.app_surface.scale_factor
+                } else {
+                    input_param
+                };
+                vec![density, density / 2.0, 1.0 * self.app_surface.scale_factor]
             }
             _ => vec![0.0],
         };
@@ -78,105 +96,25 @@ impl WgpuCanvas {
     }
 
     pub fn set_external_texture(&mut self, external_texture: wgpu::Texture, img_size: (f32, f32)) {
-        self.update_filter_params(img_size);
-
-        let texture_view = external_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler = self
-            .app_surface
-            .device
-            .create_sampler(&wgpu::SamplerDescriptor {
-                label: None,
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Linear,
-                mipmap_filter: wgpu::FilterMode::Linear,
-                ..Default::default()
-            });
-        let view_node = match self.view_node {
-            Some(ref mut node) => node,
-            None => {
-                let texture = idroid::load_texture::empty(
-                    &self.app_surface.device,
-                    self.app_surface.config.format,
-                    wgpu::Extent3d {
-                        width: 1,
-                        height: 1,
-                        depth_or_array_layers: 1,
-                    },
-                    None,
-                    Some(wgpu::TextureUsages::TEXTURE_BINDING),
-                    None,
-                );
-                let node = RenderNode::new::<PosTex>(
-                    &self.app_surface,
-                    vec![&self.mvp_buffer],
-                    vec![&self.params_buffer],
-                    vec![(&texture, None)],
-                    vec![&sampler],
-                    &self.shader_manager.ascii_art,
-                );
-
-                self.view_node = Some(node);
-                self.view_node.as_mut().unwrap()
-            }
-        };
-
+        self.img_size = img_size;
         let sw = self.app_surface.config.width as f32;
         let sh = self.app_surface.config.height as f32;
-        view_node.viewport = (
-            (sw - img_size.0) / 2.0,
-            (sh - img_size.1) / 2.0,
-            img_size.0,
-            img_size.1,
-        );
 
-        let (vertex_data, _) = Plane::new(1, 1).generate_vertices();
-        self.app_surface.queue.write_buffer(
-            &view_node.vertex_buf.buffer,
-            0,
-            bytemuck::cast_slice(&vertex_data),
-        );
-        let sampler = self
-            .app_surface
-            .device
-            .create_sampler(&wgpu::SamplerDescriptor {
-                label: None,
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Linear,
-                mipmap_filter: wgpu::FilterMode::Linear,
-                ..Default::default()
-            });
-        let texture_view = external_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        view_node.bg_setting.bind_group =
-            self.app_surface
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &view_node.bg_setting.bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: self.mvp_buffer.buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: self.params_buffer.buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::TextureView(&texture_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 3,
-                            resource: wgpu::BindingResource::Sampler(&sampler),
-                        },
-                    ],
-                    label: None,
-                });
+        self.create_render_node_if_needed();
+        self.view_node.as_mut().map(|node| {
+            node.viewport = (
+                (sw - img_size.0) / 2.0,
+                (sh - img_size.1) / 2.0,
+                img_size.0,
+                img_size.1,
+            );
+            node.update_binding_group(
+                &self.app_surface,
+                &self.mvp_buffer.buffer,
+                &self.params_buffer.buffer,
+                &external_texture,
+            )
+        });
     }
 
     pub fn enter_frame(&mut self) {
@@ -200,5 +138,33 @@ impl WgpuCanvas {
 
     pub fn resize(&mut self) {
         self.app_surface.resize_surface();
+    }
+
+    fn create_render_node_if_needed(&mut self) {
+        if self.view_node.is_none() {
+            let texture = idroid::load_texture::empty(
+                &self.app_surface.device,
+                self.app_surface.config.format,
+                wgpu::Extent3d {
+                    width: 1,
+                    height: 1,
+                    depth_or_array_layers: 1,
+                },
+                None,
+                Some(wgpu::TextureUsages::TEXTURE_BINDING),
+                None,
+            );
+            let filter_type = FilterType::Original;
+            let node = RenderNode::new::<PosTex>(
+                &self.app_surface,
+                vec![&self.mvp_buffer],
+                vec![&self.params_buffer],
+                vec![(&texture, None)],
+                &self.shader_manager.get_shader_ref(filter_type),
+            );
+
+            self.view_node = Some(node);
+            self.current_filter = filter_type;
+        }
     }
 }

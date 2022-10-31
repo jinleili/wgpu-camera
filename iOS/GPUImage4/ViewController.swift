@@ -9,6 +9,12 @@ import UIKit
 
 class ViewController: UIViewController {
     @IBOutlet var metalV: MetalView!
+    @IBOutlet var cv: UICollectionView!
+    
+    @IBOutlet var slider: UISlider!
+    @IBOutlet var minLb: UILabel!
+    @IBOutlet var maxLb: UILabel!
+
     var wgpuCanvas: OpaquePointer?
     
     var session: CameraSession?
@@ -23,7 +29,16 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         session = CameraSession(delegate: self)
+        cv.dataSource = self
+        cv.delegate = self
+        cv.register(FilterCVCell.self, forCellWithReuseIdentifier: "cell")
+       let layout =  cv.collectionViewLayout as! UICollectionViewFlowLayout
+        let itemSize = CGSize(width: 110, height: 44)
+        layout.itemSize = itemSize
+        layout.estimatedItemSize = itemSize
+        layout.scrollDirection = .horizontal
 
+        slider.addTarget(self, action: #selector(sliderValueChanged), for: .valueChanged)
         self.displayLink.add(to: .current, forMode: .default)
         self.displayLink.isPaused = true
     }
@@ -57,7 +72,7 @@ class ViewController: UIViewController {
         guard let canvas = self.wgpuCanvas else {
             return
         }
-        // call rust
+        // call wgpu
         enter_frame(canvas)
     }
 }

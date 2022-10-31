@@ -4,29 +4,31 @@ use idroid::math::{Position, Rect};
 
 #[no_mangle]
 pub fn create_wgpu_canvas(ios_obj: IOSViewObj) -> *mut libc::c_void {
-    let obj = WgpuCanvas::new(AppSurface::new(ios_obj));
-    // 使用 Box 对 Rust 对象进行装箱操作。
-    // 我们无法将 Rust 对象直接传递给外部语言，通过装箱来传递此对象的胖指针
-    let box_obj = Box::new(obj);
-    // into_raw 返回指针的同时，将此对象的内存管理权转交给调用方
+    let wgpu_obj = WgpuCanvas::new(AppSurface::new(ios_obj));
+    let box_obj = Box::new(wgpu_obj);
     Box::into_raw(box_obj) as *mut libc::c_void
 }
 
 #[no_mangle]
-pub fn enter_frame(obj: *mut libc::c_void) {
-    // 获取到指针指代的 Rust 对象的可变借用
-    let obj = unsafe { &mut *(obj as *mut WgpuCanvas) };
-    obj.enter_frame();
+pub fn set_filter(wgpu_obj: *mut libc::c_void, ty: crate::FilterType, param: f32) {
+    let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
+    wgpu_obj.set_filter(ty, param);
+}
+
+#[no_mangle]
+pub fn change_filter_param(wgpu_obj: *mut libc::c_void, param: f32) {
+    let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
+    wgpu_obj.change_filter_param(param);
 }
 
 #[no_mangle]
 pub fn set_external_texture(
-    obj: *mut libc::c_void,
+    wgpu_obj: *mut libc::c_void,
     raw: *mut std::ffi::c_void,
     width: i32,
     height: i32,
 ) {
-    let obj = unsafe { &mut *(obj as *mut WgpuCanvas) };
+    let obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
     // let w_ratio = obj.app_surface.config.width as f32 / width as f32;
     // let h_ratio = obj.app_surface.config.height as f32 / height as f32;
     // let (w, h) = if h_ratio > w_ratio {
@@ -72,4 +74,10 @@ pub fn set_external_texture(
             )
     };
     obj.set_external_texture(external_texture, (width as f32, height as f32));
+}
+
+#[no_mangle]
+pub fn enter_frame(wgpu_obj: *mut libc::c_void) {
+    let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
+    wgpu_obj.enter_frame();
 }

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD922EE0290F82110014EEFE /* FilterCVCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD922EDF290F82110014EEFE /* FilterCVCell.swift */; };
+		AD922EE2290F83CB0014EEFE /* ViewController+FilterSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD922EE1290F83CB0014EEFE /* ViewController+FilterSelection.swift */; };
 		ADD6E02929015DB500604039 /* libgpu_image4.a in Frameworks */ = {isa = PBXBuildFile; fileRef = ADD6E02829015DB500604039 /* libgpu_image4.a */; };
 		ADD6E04329023D4B00604039 /* CameraSessionTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD6E04029023D4B00604039 /* CameraSessionTypes.swift */; };
 		ADD6E04529023D4B00604039 /* CameraSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD6E04229023D4B00604039 /* CameraSession.swift */; };
@@ -20,6 +22,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AD922EDF290F82110014EEFE /* FilterCVCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilterCVCell.swift; sourceTree = "<group>"; };
+		AD922EE1290F83CB0014EEFE /* ViewController+FilterSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ViewController+FilterSelection.swift"; sourceTree = "<group>"; };
 		ADD6E02829015DB500604039 /* libgpu_image4.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libgpu_image4.a; path = "../target/aarch64-apple-ios/debug/libgpu_image4.a"; sourceTree = "<group>"; };
 		ADD6E04029023D4B00604039 /* CameraSessionTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraSessionTypes.swift; sourceTree = "<group>"; };
 		ADD6E04229023D4B00604039 /* CameraSession.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CameraSession.swift; sourceTree = "<group>"; };
@@ -80,6 +84,8 @@
 				ADEE4C942901532000C84A32 /* AppDelegate.swift */,
 				ADEE4C962901532000C84A32 /* SceneDelegate.swift */,
 				ADEE4C982901532000C84A32 /* ViewController.swift */,
+				AD922EE1290F83CB0014EEFE /* ViewController+FilterSelection.swift */,
+				AD922EDF290F82110014EEFE /* FilterCVCell.swift */,
 				ADD6E03F29023D1700604039 /* camera */,
 				ADEE4CAC290153A100C84A32 /* GPUImage4-Bridging-Header.h */,
 				ADEE4CAA290153A100C84A32 /* libgpu_image4.h */,
@@ -175,8 +181,10 @@
 				ADD6E04529023D4B00604039 /* CameraSession.swift in Sources */,
 				ADD6E04329023D4B00604039 /* CameraSessionTypes.swift in Sources */,
 				ADEE4C992901532000C84A32 /* ViewController.swift in Sources */,
+				AD922EE0290F82110014EEFE /* FilterCVCell.swift in Sources */,
 				ADEE4C952901532000C84A32 /* AppDelegate.swift in Sources */,
 				ADEE4C972901532000C84A32 /* SceneDelegate.swift in Sources */,
+				AD922EE2290F83CB0014EEFE /* ViewController+FilterSelection.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

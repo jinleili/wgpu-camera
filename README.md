@@ -4,33 +4,29 @@
 RUSTFLAGS=--cfg=web_sys_unstable_apis cargo run --release --package run-wasm --
 ```
 
-## **iOS**
+## Run on iOS
 [中文版文档: 与 iOS App 集成](https://jinleili.github.io/learn-wgpu-zh/integration-and-debugging/ios/)
 
-### Add build target
+Build for iOS target:
 
 ```sh
-# Add iOS device target
+# Add iOS build target
 rustup target add aarch64-apple-ios 
-
 # Add iOS simulator target
 # Intel CPU Mac
 rustup target add x86_64-apple-ios
 # M1+ Mac
 rustup target add aarch64-apple-ios-sim
-```
 
-### Build and run
-Build for iOS device and simulator
-```sh
-# Use Metal backend
+# Build for iOS device and/or simulator
 cargo build --target aarch64-apple-ios && cargo build --target <aarch64-apple-ios-sim or x86_64-apple-ios>
+
 ```
 
 Then, Open `iOS/GPUImage4.xcodeproj` with Xcode and run on iOS device. 
 
 
-## **Android**
+## Run on Android
 [中文版文档: 与 Android App 集成](https://jinleili.github.io/learn-wgpu-zh/integration-and-debugging/android/)
 
 ### Set up Android environment
@@ -49,20 +45,15 @@ export ANDROID_SDK_ROOT=$HOME/Library/Android/sdk
 export NDK_HOME=$ANDROID_SDK_ROOT/ndk/23.1.7779620
 ```
 
-### Add build targets
-
-Since simulator and virtual devices only support GLES, `x86_64-linux-android` and `i686-linux-android` targets are not necessary
+### Build for Android target
 ```sh
+# Add build target
 rustup target add aarch64-linux-android armv7-linux-androideabi
-```
-### Install cargo so subcommand
-```sh
-cargo install cargo-so
-```
 
-### Build
-```sh
-# currently, multi-target build only useable on the nightly channel
+# Install cargo so subcommand
+cargo install cargo-so
+
+# Build
 cargo so b --lib --target aarch64-linux-android --release
 cargo so b --lib --target armv7-linux-androideabi --release
 

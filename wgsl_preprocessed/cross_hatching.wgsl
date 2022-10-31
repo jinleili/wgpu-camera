@@ -1,5 +1,8 @@
 struct InputParams {
-    temp: f32,
+    density: f32,
+    half_density: f32,
+    width: f32,
+
 };
 
 struct VertexOutput {
@@ -40,19 +43,22 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     var frag_color = vec3<f32>(1.0);
     let frag_coord = vertex.position.xy;
 
-    if (gray < 1.0) && ((frag_coord.x + frag_coord.y) % 10.0 == 0.0) {
+    let params = params[0];
+    if (gray < 1.0) && ((frag_coord.x + frag_coord.y) % params.density <= params.width) {
         frag_color = vec3<f32>(gray);
-    } else if (gray < 0.75) && ((frag_coord.x - frag_coord.y) % 10.0 == 0.0) {
+    }
+    if (gray < 0.75) && (abs((frag_coord.x - frag_coord.y) % params.density) <= params.width) {
         frag_color = vec3<f32>(gray);
     }
      
-    if (gray < 0.5) && ((frag_coord.x + frag_coord.y - 5.0) % 10.0  == 0.0) {
+    if (gray < 0.5) && ((frag_coord.x + frag_coord.y - params.half_density) % params.density <= params.width) {
         frag_color = vec3<f32>(gray);
-    } else if (gray < 0.25) && ((frag_coord.x - frag_coord.y - 5.0) % 10.0  == 0.0) {
+    }
+    if (gray < 0.25) && (abs((frag_coord.x - frag_coord.y - params.half_density) % params.density) <= params.width) {
         frag_color = vec3<f32>(gray);
     }
 
-    frag_color = min(black_edge, frag_color);
+    frag_color = frag_color * black_edge;
 
     return vec4<f32>(frag_color, 1.0);
 }

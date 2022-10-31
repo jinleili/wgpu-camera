@@ -86,8 +86,9 @@ async fn create_instance() -> (EventLoop<()>, WgpuCanvas) {
 
     let app_surface = AppSurface::new(window).await;
     let mut canvas = WgpuCanvas::new(app_surface);
+    canvas.set_filter(gpu_image4::FilterType::CrossHatch, 16.0);
 
-    let (texture, size) = gpu_image4::ffi::get_a_texture(&canvas.app_surface);
+    let (texture, size) = gpu_image4::get_a_texture(&canvas.app_surface);
     canvas.set_external_texture(texture, (size.width as f32, size.height as f32));
 
     (event_loop, canvas)

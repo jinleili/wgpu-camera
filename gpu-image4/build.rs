@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // 这一行告诉 cargo 如果 /wgsl/ 目录中的内容发生了变化，就重新运行脚本
     println!("cargo:rerun-if-changed=/../wgsl/*");
 
-    let shader_files = vec!["edge_detection", "cross_hatching", "ascii_art"];
+    let shader_files = vec!["original", "edge_detection", "cross_hatching", "ascii_art"];
 
     // 创建目录
     std::fs::create_dir_all(WGSL_FOLDER)?;

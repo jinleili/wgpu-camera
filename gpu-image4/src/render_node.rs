@@ -5,14 +5,18 @@ use idroid::vertex::Vertex;
 use idroid::{geometry::Plane, math::Rect, AnyTexture};
 use idroid::{BufferObj, MVPUniform};
 use wgpu::util::DeviceExt;
-use wgpu::{ShaderModule, StorageTextureAccess};
+use wgpu::{Buffer, PipelineLayout, ShaderModule, StorageTextureAccess, Texture, TextureFormat};
 
 pub struct RenderNode {
-    pub vertex_buf: BufferObj,
-    pub index_buf: wgpu::Buffer,
-    pub index_count: usize,
+    pub sampler: wgpu::Sampler,
+    vertex_buf: BufferObj,
+    index_buf: wgpu::Buffer,
+    index_count: usize,
     pub bg_setting: BindingGroupSetting,
-    pub pipeline: wgpu::RenderPipeline,
+    array_stride: wgpu::BufferAddress,
+    vertex_attributes: Vec<wgpu::VertexAttribute>,
+    pipeline_layout: PipelineLayout,
+    pipeline: wgpu::RenderPipeline,
     pub viewport: (f32, f32, f32, f32),
 }
 
@@ -23,7 +27,6 @@ impl RenderNode {
         uniform_buffers: Vec<&BufferObj>,
         storage_buffers: Vec<&BufferObj>,
         tex_views: Vec<(&AnyTexture, Option<StorageTextureAccess>)>,
-        samplers: Vec<&wgpu::Sampler>,
         shader_module: &ShaderModule,
     ) -> Self {
         let device = &app_surface.device;
@@ -34,13 +37,23 @@ impl RenderNode {
             wgpu::ShaderStages::FRAGMENT,
             wgpu::ShaderStages::FRAGMENT,
         ];
+        let sampler = app_surface.device.create_sampler(&wgpu::SamplerDescriptor {
+            label: None,
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
+            ..Default::default()
+        });
 
         let bg_setting = BindingGroupSetting::new(
             device,
             uniform_buffers,
             storage_buffers,
             tex_views,
-            samplers,
+            vec![&sampler],
             stages,
         );
 
@@ -58,12 +71,8 @@ impl RenderNode {
             usage: wgpu::BufferUsages::INDEX,
         });
 
-        let default_layout_attributes = T::vertex_attributes(0);
-        let vertex_buffer_layouts = vec![wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<T>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &default_layout_attributes,
-        }];
+        let array_stride = std::mem::size_of::<T>() as wgpu::BufferAddress;
+        let vertex_attributes = T::vertex_attributes(0);
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
@@ -71,35 +80,24 @@ impl RenderNode {
             push_constant_ranges: &[],
         });
         // Create the render pipeline
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("render_node pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: shader_module,
-                entry_point: "vs_main",
-                buffers: &vertex_buffer_layouts,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: shader_module,
-                entry_point: "fs_main",
-                targets: &[Some(corlor_format.into())],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                front_face: wgpu::FrontFace::Ccw,
-                polygon_mode: wgpu::PolygonMode::Fill,
-                ..Default::default()
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        });
+        let pipeline = Self::create_pipeline(
+            device,
+            corlor_format,
+            &pipeline_layout,
+            array_stride,
+            &vertex_attributes,
+            shader_module,
+        );
 
         RenderNode {
+            sampler,
             vertex_buf,
             index_buf,
             index_count: index_data.len(),
             bg_setting,
+            array_stride,
+            vertex_attributes,
+            pipeline_layout,
             pipeline,
             viewport: (
                 0.0,
@@ -108,6 +106,53 @@ impl RenderNode {
                 app_surface.config.height as f32,
             ),
         }
+    }
+
+    pub fn change_filter(&mut self, app_surface: &AppSurface, shader_module: &ShaderModule) {
+        self.pipeline = Self::create_pipeline(
+            &app_surface.device,
+            app_surface.config.format,
+            &self.pipeline_layout,
+            self.array_stride,
+            &self.vertex_attributes,
+            shader_module,
+        );
+    }
+
+    pub fn update_binding_group(
+        &mut self,
+        app_surface: &AppSurface,
+        mvp_buffer: &Buffer,
+        params_buffer: &Buffer,
+        external_texture: &Texture,
+    ) {
+        let texture_view = external_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.bg_setting.bind_group =
+            app_surface
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &self.bg_setting.bind_group_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: mvp_buffer.as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: params_buffer.as_entire_binding(),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 2,
+                            resource: wgpu::BindingResource::TextureView(&texture_view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 3,
+                            resource: wgpu::BindingResource::Sampler(&self.sampler),
+                        },
+                    ],
+                    label: None,
+                });
     }
 
     pub fn begin_render_pass(
@@ -140,5 +185,42 @@ impl RenderNode {
             1.0,
         );
         rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
+    }
+
+    fn create_pipeline(
+        device: &wgpu::Device,
+        corlor_format: TextureFormat,
+        pipeline_layout: &PipelineLayout,
+        array_stride: wgpu::BufferAddress,
+        vertex_attributes: &[wgpu::VertexAttribute],
+        shader_module: &ShaderModule,
+    ) -> wgpu::RenderPipeline {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("render_node pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: shader_module,
+                entry_point: "vs_main",
+                buffers: &[wgpu::VertexBufferLayout {
+                    array_stride,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: vertex_attributes,
+                }],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: shader_module,
+                entry_point: "fs_main",
+                targets: &[Some(corlor_format.into())],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                front_face: wgpu::FrontFace::Ccw,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        })
     }
 }

@@ -1,5 +1,7 @@
+use crate::FilterType;
 use wgpu::ShaderModule;
 pub struct ShaderManager {
+    pub original: ShaderModule,
     pub ascii_art: ShaderModule,
     pub cross_hatch: ShaderModule,
     pub edge_detection: ShaderModule,
@@ -8,6 +10,11 @@ pub struct ShaderManager {
 impl ShaderManager {
     pub fn new(device: &wgpu::Device) -> Self {
         ShaderManager {
+            original: create_shader_module(
+                device,
+                include_str!("../../wgsl_preprocessed/original.wgsl"),
+                Some("original shader"),
+            ),
             ascii_art: create_shader_module(
                 device,
                 include_str!("../../wgsl_preprocessed/ascii_art.wgsl"),
@@ -23,6 +30,15 @@ impl ShaderManager {
                 include_str!("../../wgsl_preprocessed/edge_detection.wgsl"),
                 Some("edge_detection shader"),
             ),
+        }
+    }
+
+    pub fn get_shader_ref(&self, ty: FilterType) -> &ShaderModule {
+        match ty {
+            FilterType::Original => &self.original,
+            FilterType::AsciiArt => &self.ascii_art,
+            FilterType::CrossHatch => &self.cross_hatch,
+            FilterType::EdgeDetection => &self.edge_detection,
         }
     }
 }
