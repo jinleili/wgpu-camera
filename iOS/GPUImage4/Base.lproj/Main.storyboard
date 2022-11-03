@@ -18,9 +18,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="390" height="844"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4ub-gV-s7k" customClass="MetalView" customModule="GPUImage4" customModuleProvider="target">
+                            <view opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4ub-gV-s7k" customClass="MetalView" customModule="GPUImage4" customModuleProvider="target">
                                 <rect key="frame" x="0.0" y="91.666666666666686" width="390" height="612.33333333333326"/>
-                                <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                             </view>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="GPUImage4" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="YBj-1c-dB8">
                                 <rect key="frame" x="129" y="47" width="132.33333333333337" height="28.666666666666671"/>
@@ -65,7 +64,7 @@
                                     </stackView>
                                     <collectionView clipsSubviews="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" delaysContentTouches="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="efI-su-Wbi">
                                         <rect key="frame" x="0.0" y="50" width="366" height="44"/>
-                                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                        <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
                                             <constraint firstAttribute="height" constant="44" id="koS-hc-4vO"/>
                                         </constraints>
@@ -90,7 +89,7 @@
                             </stackView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="VSo-Pm-CbC" firstAttribute="top" secondItem="4ub-gV-s7k" secondAttribute="bottom" constant="12" id="1gS-Zo-nWR"/>
                             <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="VSo-Pm-CbC" secondAttribute="trailing" constant="12" id="NAc-7f-3tK"/>
@@ -117,9 +116,6 @@
         </scene>
     </scenes>
     <resources>
-        <systemColor name="systemBackgroundColor">
-            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
         <systemColor name="systemBrownColor">
             <color red="0.63529411764705879" green="0.51764705882352946" blue="0.36862745098039218" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </systemColor>

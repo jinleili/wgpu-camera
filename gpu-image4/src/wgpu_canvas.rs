@@ -1,7 +1,6 @@
 use crate::{render_node::RenderNode, shader_manager::ShaderManager, FilterType};
 use app_surface::{AppSurface, SurfaceFrame};
 use idroid::vertex::PosTex;
-use idroid::{geometry::Plane, math::Rect};
 use idroid::{BufferObj, MVPUniform};
 
 pub struct WgpuCanvas {
@@ -12,6 +11,7 @@ pub struct WgpuCanvas {
     view_node: Option<RenderNode>,
     current_filter: FilterType,
     img_size: (f32, f32),
+    opaque_background_color: bool,
 }
 
 #[allow(dead_code)]
@@ -43,6 +43,7 @@ impl WgpuCanvas {
             view_node: None,
             current_filter: FilterType::AsciiArt,
             img_size: (0.0, 0.0),
+            opaque_background_color: false,
         };
         if let Some(callback) = instance.app_surface.callback_to_app {
             callback(0);
@@ -50,8 +51,14 @@ impl WgpuCanvas {
         instance
     }
 
-    pub fn set_filter(&mut self, ty: crate::FilterType, input_param: f32) {
+    pub fn set_filter(
+        &mut self,
+        ty: crate::FilterType,
+        opaque_background_color: bool,
+        input_param: f32,
+    ) {
         self.create_render_node_if_needed();
+        self.opaque_background_color = opaque_background_color;
         self.view_node.as_mut().map(|node| {
             node.change_filter(&self.app_surface, self.shader_manager.get_shader_ref(ty));
             self.current_filter = ty;
@@ -63,61 +70,44 @@ impl WgpuCanvas {
         self.update_filter_params(input_param);
     }
 
-    pub fn update_filter_params(&self, input_param: f32) {
-        let params_data = match self.current_filter {
-            FilterType::AsciiArt => {
-                let ascii_width = if input_param == 0.0 {
-                    8.0 * self.app_surface.scale_factor
-                } else {
-                    input_param
-                };
-                vec![
-                    1.0 / self.img_size.0 * ascii_width,
-                    1.0 / self.img_size.1 * ascii_width,
-                    ascii_width,
-                    ascii_width / 2.0,
-                ]
-            }
-            FilterType::CrossHatch => {
-                let density = if input_param == 0.0 {
-                    10.0 * self.app_surface.scale_factor
-                } else {
-                    input_param
-                };
-                vec![density, density / 2.0, 1.0 * self.app_surface.scale_factor]
-            }
-            _ => vec![0.0],
-        };
-        self.app_surface.queue.write_buffer(
-            &self.params_buffer.buffer,
-            0,
-            bytemuck::cast_slice(&params_data),
-        );
-    }
-
-    pub fn set_external_texture(&mut self, external_texture: wgpu::Texture, img_size: (f32, f32)) {
+    pub fn set_external_texture(
+        &mut self,
+        external_texture: wgpu::Texture,
+        tex_key: String,
+        img_size: (f32, f32),
+    ) {
         self.img_size = img_size;
         let sw = self.app_surface.config.width as f32;
         let sh = self.app_surface.config.height as f32;
-
+        let w_ratio = sw / img_size.0;
+        let h_ratio = sh / img_size.1;
+        let viewport = if w_ratio > h_ratio {
+            let h = img_size.1 * w_ratio;
+            (0.0, (sh - h) / 2.0, sw, h)
+        } else {
+            let w = img_size.0 * h_ratio;
+            ((sw - w) / 2.0, 0.0, w, sh)
+        };
         self.create_render_node_if_needed();
         self.view_node.as_mut().map(|node| {
-            node.viewport = (
-                (sw - img_size.0) / 2.0,
-                (sh - img_size.1) / 2.0,
-                img_size.0,
-                img_size.1,
-            );
-            node.update_binding_group(
+            node.viewport = viewport;
+            node.update_bind_group(
                 &self.app_surface,
                 &self.mvp_buffer.buffer,
                 &self.params_buffer.buffer,
                 &external_texture,
+                tex_key,
             )
         });
     }
 
-    pub fn enter_frame(&mut self) {
+    pub fn remove_texture(&mut self, tex_key: String) {
+        self.view_node
+            .as_mut()
+            .map(|node| node.remove_bind_group(tex_key));
+    }
+
+    pub fn enter_frame(&mut self, tex_key: String) {
         if let Some(view_node) = &self.view_node {
             let device = &self.app_surface.device;
             let queue = &self.app_surface.queue;
@@ -125,7 +115,7 @@ impl WgpuCanvas {
             let mut encoder =
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             {
-                view_node.begin_render_pass(&view, &mut encoder);
+                view_node.begin_render_pass(&view, &mut encoder, tex_key);
             }
             queue.submit(Some(encoder.finish()));
             frame.present();
@@ -142,29 +132,68 @@ impl WgpuCanvas {
 
     fn create_render_node_if_needed(&mut self) {
         if self.view_node.is_none() {
-            let texture = idroid::load_texture::empty(
-                &self.app_surface.device,
-                self.app_surface.config.format,
-                wgpu::Extent3d {
-                    width: 1,
-                    height: 1,
-                    depth_or_array_layers: 1,
-                },
-                None,
-                Some(wgpu::TextureUsages::TEXTURE_BINDING),
-                None,
-            );
             let filter_type = FilterType::Original;
             let node = RenderNode::new::<PosTex>(
                 &self.app_surface,
-                vec![&self.mvp_buffer],
-                vec![&self.params_buffer],
-                vec![(&texture, None)],
                 &self.shader_manager.get_shader_ref(filter_type),
             );
 
             self.view_node = Some(node);
             self.current_filter = filter_type;
         }
+    }
+
+    fn update_filter_params(&self, input_param: f32) {
+        let opaque_background_color = if self.opaque_background_color {
+            1.0
+        } else {
+            0.0
+        };
+        let params_data = match self.current_filter {
+            FilterType::AsciiArt => {
+                let ascii_width = if input_param == 0.0 {
+                    8.0 * self.app_surface.scale_factor
+                } else {
+                    input_param.min(64.0).max(8.0)
+                };
+                vec![
+                    1.0 / self.img_size.0 * ascii_width,
+                    1.0 / self.img_size.1 * ascii_width,
+                    ascii_width,
+                    ascii_width / 2.0,
+                ]
+            }
+            FilterType::CrossHatch => {
+                let density = if input_param == 0.0 {
+                    10.0 * self.app_surface.scale_factor
+                } else {
+                    input_param.min(64.0).max(10.0)
+                };
+                vec![
+                    density,
+                    density / 2.0,
+                    density * 0.08,
+                    0.8,
+                    0.6,
+                    0.3,
+                    0.15,
+                    opaque_background_color,
+                ]
+            }
+            FilterType::EdgeDetection => {
+                let noise_suppression = if input_param == 0.0 {
+                    0.05
+                } else {
+                    input_param.min(0.33).max(0.05)
+                };
+                vec![noise_suppression, opaque_background_color]
+            }
+            _ => vec![0.0],
+        };
+        self.app_surface.queue.write_buffer(
+            &self.params_buffer.buffer,
+            0,
+            bytemuck::cast_slice(&params_data),
+        );
     }
 }

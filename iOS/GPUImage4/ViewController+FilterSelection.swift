@@ -15,16 +15,16 @@ struct Filter {
     
     init(name: String, min: Float, max: Float) {
         self.name = name
-        self.min = min * nativeScale
-        self.max = max * nativeScale
+        self.min = min
+        self.max = max
     }
 }
 
 let filters = [
     Filter.init(name: "Original", min: 0.0, max: 0.0),
-    Filter.init(name: "ASCII Art", min: 8.0, max: 16.0) ,
-    Filter.init(name: "Cross Hatch", min: 4.0, max: 9.0),
-    Filter.init(name: "Edge Detection", min: 8.0, max: 16.0)
+    Filter.init(name: "ASCII Art", min: 4.0 * nativeScale, max: 12.0 * nativeScale) ,
+    Filter.init(name: "Cross Hatch", min: 8.0 * nativeScale, max: 20.0 * nativeScale),
+    Filter.init(name: "Edge Detection", min: 0.05, max: 0.33)
 ]
 
 extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource {
@@ -51,7 +51,7 @@ extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource {
         minLb.text = "\(filter.min)"
         maxLb.text = "\(filter.max)"
 
-        set_filter(canvas, filter_type(UInt32(indexPath.row)), filter.min)
+        set_filter(canvas, filter_type(UInt32(indexPath.row)), 0, filter.min)
     }
     
     @IBAction func sliderValueChanged() {

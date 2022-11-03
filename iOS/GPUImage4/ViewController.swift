@@ -9,8 +9,8 @@ import UIKit
 
 class ViewController: UIViewController {
     @IBOutlet var metalV: MetalView!
-    @IBOutlet var cv: UICollectionView!
     
+    @IBOutlet var cv: UICollectionView!
     @IBOutlet var slider: UISlider!
     @IBOutlet var minLb: UILabel!
     @IBOutlet var maxLb: UILabel!
@@ -19,8 +19,12 @@ class ViewController: UIViewController {
     
     var session: CameraSession?
     var texture: MTLTexture?
-    var textureIndex = 0
     var latestCameraTexture: UnsafeMutableRawPointer?
+    
+    // Record texture unused times
+    var texKV: Dictionary<String, Int32> = [:]
+    var current_tex_key: String = ""
+    var frameIndex = 0
 
     lazy var displayLink: CADisplayLink = {
         CADisplayLink.init(target: self, selector: #selector(enterFrame))
@@ -28,6 +32,10 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        if let bgImg = UIImage(named: "paper") {
+            self.view.backgroundColor = UIColor.init(patternImage: bgImg)
+        }
+        
         session = CameraSession(delegate: self)
         cv.dataSource = self
         cv.delegate = self
@@ -45,7 +53,6 @@ class ViewController: UIViewController {
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        self.view.backgroundColor = .white
         if wgpuCanvas == nil {
             let viewPointer = Unmanaged.passUnretained(self.metalV).toOpaque()
             let metalLayer = Unmanaged.passUnretained(self.metalV.layer).toOpaque()
@@ -73,7 +80,27 @@ class ViewController: UIViewController {
             return
         }
         // call wgpu
-        enter_frame(canvas)
+        enter_frame(canvas, current_tex_key)
+        
+        // 每 60 帧清理一次纹理缓存
+        frameIndex += 1
+        if frameIndex >= 60 {
+            frameIndex = 0
+            
+            if texKV.count > 2 {
+               let s = texKV.sorted { a, b in
+                    a.value < b.value
+                }
+                // 如果一个纹理连续 59 帧以上没被使用，则清除此纹理在 wgpu 中的对应 bind_group
+                s.last.map { d in
+                    if d.value > 59 {
+                        remove_texture(canvas, d.key)
+                        texKV.removeValue(forKey: d.key)
+                    }
+                }
+            }
+        }
+
     }
 }
 
@@ -85,19 +112,36 @@ extension ViewController: CameraSessionDelegate {
         }
         self.texture = textures[0]
         let tex_pointer = Unmanaged.passRetained( self.texture!).toOpaque()
-        if tex_pointer != latestCameraTexture {
-            print("----------- \(tex_pointer)")
-
-            latestCameraTexture = tex_pointer
+        let tex_key = "\(tex_pointer)"
+        var isNewTexture = true
+        // 记录连续没被使用的次数
+        for (k, v) in texKV {
+            if k == tex_key {
+                texKV.updateValue(0, forKey: k)
+                isNewTexture = false
+            } else {
+                texKV.updateValue(v + 1, forKey: k)
+            }
         }
+        if isNewTexture {
+            texKV.updateValue(0, forKey: tex_key)
+        }
+        current_tex_key  = tex_key
+                
+//        if tex_pointer != latestCameraTexture {
+//            print("----------- \(tex_pointer)")
+//
+//            latestCameraTexture = tex_pointer
+//        }
         
-        if textureIndex == 0 {
-            textureIndex += 1
-
-            displayLink.isPaused = true
-            set_external_texture(canvas, tex_pointer, Int32(self.texture!.width), Int32(self.texture!.height))
-            displayLink.isPaused = false
+        if isNewTexture {
+//            displayLink.isPaused = true
+            set_external_texture(canvas, tex_pointer, tex_key, Int32(self.texture!.width), Int32(self.texture!.height))
+//            displayLink.isPaused = false
         }
+//        print(texKV.values.sorted(by: { a, b in
+//            a < b
+//        }))
 
     }
     
@@ -109,11 +153,6 @@ extension ViewController: CameraSessionDelegate {
              */
             cameraSession.start()
         }
-        
-        DispatchQueue.main.async {
-            self.title = "Metal camera: \(state)"
-        }
-        
         NSLog("Session changed state to \(state) with error: \(error?.localizedDescription ?? "None").")
     }
 }

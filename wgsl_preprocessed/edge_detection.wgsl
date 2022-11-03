@@ -1,5 +1,6 @@
 struct InputParams {
-    temp: f32,
+    noise_suppression: f32,
+    opaque_background_color: f32,
 };
 
 struct VertexOutput {
@@ -27,14 +28,19 @@ fn vs_main(
 @group(0) @binding(2) var tex: texture_2d<f32>;
 @group(0) @binding(3) var tex_sampler: sampler;
 
-fn edge_detection(luminance: f32, step_val: f32) -> vec3<f32> {
-    return vec3<f32>(step(step_val, fwidth(luminance)));
+fn edge_detection(luminance: f32, step_val: f32) -> f32 {
+    return step(step_val, fwidth(luminance));
 }
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(tex, tex_sampler, vertex.uv);
     let gray = length(color.rgb);
+    let edge = edge_detection(gray, params[0].noise_suppression);
 
-    return vec4<f32>(edge_detection(gray, 0.135), 1.0);
+    if (params[0].opaque_background_color >= 1.0) {
+        return vec4<f32>(vec3<f32>(edge), 1.0);
+    } else {
+        return vec4<f32>(vec3<f32>(1.0 - edge), edge);
+    }
 }

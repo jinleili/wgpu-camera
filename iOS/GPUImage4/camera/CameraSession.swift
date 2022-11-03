@@ -74,9 +74,6 @@ public final class CameraSession: NSObject {
                 self.handleError(error)
             }
             catch {
-                /**
-                 * We only throw `MetalCameraSessionError` errors.
-                 */
             }
         })
     }
@@ -107,12 +104,9 @@ public final class CameraSession: NSObject {
     
     /// Dispatch queue for capture session events.
     fileprivate var captureSessionQueue = DispatchQueue(label: "MetalCameraSessionQueue", attributes: [])
-    
-#if arch(i386) || arch(x86_64)
-#else
+
     /// Texture cache we will use for converting frame images to textures
     internal var textureCache: CVMetalTextureCache?
-#endif
     
     fileprivate var metalDevice = MTLCreateSystemDefaultDevice()
     
@@ -212,7 +206,7 @@ public final class CameraSession: NSObject {
         let outputData = AVCaptureVideoDataOutput()
         
         outputData.videoSettings = [
-            kCVPixelBufferPixelFormatTypeKey as String: Int(pixelFormat.coreVideoType)
+            kCVPixelBufferPixelFormatTypeKey as String: Int(pixelFormat.coreVideoType),
         ]
         outputData.alwaysDiscardsLateVideoFrames = true
         outputData.setSampleBufferDelegate(self, queue: captureSessionQueue)

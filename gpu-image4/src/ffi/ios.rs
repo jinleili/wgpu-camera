@@ -1,6 +1,6 @@
 use crate::wgpu_canvas::WgpuCanvas;
 use app_surface::{AppSurface, IOSViewObj};
-use idroid::math::{Position, Rect};
+use std::os::raw::c_char;
 
 #[no_mangle]
 pub fn create_wgpu_canvas(ios_obj: IOSViewObj) -> *mut libc::c_void {
@@ -10,9 +10,19 @@ pub fn create_wgpu_canvas(ios_obj: IOSViewObj) -> *mut libc::c_void {
 }
 
 #[no_mangle]
-pub fn set_filter(wgpu_obj: *mut libc::c_void, ty: crate::FilterType, param: f32) {
+pub fn set_filter(
+    wgpu_obj: *mut libc::c_void,
+    ty: crate::FilterType,
+    opaque_background_color: i32,
+    param: f32,
+) {
     let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
-    wgpu_obj.set_filter(ty, param);
+    let opaque_background_color = if opaque_background_color == 1 {
+        true
+    } else {
+        false
+    };
+    wgpu_obj.set_filter(ty, opaque_background_color, param);
 }
 
 #[no_mangle]
@@ -22,9 +32,17 @@ pub fn change_filter_param(wgpu_obj: *mut libc::c_void, param: f32) {
 }
 
 #[no_mangle]
+pub fn remove_texture(wgpu_obj: *mut libc::c_void, tex_key: *const c_char) {
+    let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
+    let tex_key = crate::cchar_to_string(tex_key);
+    wgpu_obj.remove_texture(tex_key);
+}
+
+#[no_mangle]
 pub fn set_external_texture(
     wgpu_obj: *mut libc::c_void,
     raw: *mut std::ffi::c_void,
+    tex_key: *const c_char,
     width: i32,
     height: i32,
 ) {
@@ -40,6 +58,7 @@ pub fn set_external_texture(
     // };
     // let tex_rect = Rect::new(w, h, (0.5, 0.5).into());
 
+    let tex_key = crate::cchar_to_string(tex_key);
     let texture_extent = wgpu::Extent3d {
         width: width as u32,
         height: height as u32,
@@ -73,11 +92,12 @@ pub fn set_external_texture(
                 },
             )
     };
-    obj.set_external_texture(external_texture, (width as f32, height as f32));
+    obj.set_external_texture(external_texture, tex_key, (width as f32, height as f32));
 }
 
 #[no_mangle]
-pub fn enter_frame(wgpu_obj: *mut libc::c_void) {
+pub fn enter_frame(wgpu_obj: *mut libc::c_void, tex_key: *const c_char) {
     let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
-    wgpu_obj.enter_frame();
+    let tex_key = crate::cchar_to_string(tex_key);
+    wgpu_obj.enter_frame(tex_key);
 }

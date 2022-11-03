@@ -6,7 +6,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [lib]
-crate-type = ["rlib", "staticlib", "cdylib"]
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
 bytemuck = { version = "1.12", features = ["derive"] }

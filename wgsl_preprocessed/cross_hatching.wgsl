@@ -2,7 +2,11 @@ struct InputParams {
     density: f32,
     half_density: f32,
     width: f32,
-
+    hatch_1: f32,
+    hatch_2: f32,
+    hatch_3: f32,
+    hatch_4: f32,
+    opaque_background_color: f32,
 };
 
 struct VertexOutput {
@@ -30,35 +34,39 @@ fn vs_main(
 @group(0) @binding(2) var tex: texture_2d<f32>;
 @group(0) @binding(3) var tex_sampler: sampler;
 
-fn edge_detection(luminance: f32, step_val: f32) -> vec3<f32> {
-    return vec3<f32>(step(step_val, fwidth(luminance)));
+fn edge_detection(luminance: f32, step_val: f32) -> f32 {
+    return step(step_val, fwidth(luminance));
 }
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let color = textureSample(tex, tex_sampler, vertex.uv);
     let gray = length(color.rgb);
-    let black_edge = vec3<f32>(1.0) - edge_detection(gray, 0.225);
+    let black_edge = 1.0 - edge_detection(gray, 0.125);
 
     var frag_color = vec3<f32>(1.0);
     let frag_coord = vertex.position.xy;
 
-    let params = params[0];
-    if (gray < 1.0) && ((frag_coord.x + frag_coord.y) % params.density <= params.width) {
+    let param = params[0];
+    if (gray < param.hatch_1) && ((frag_coord.x + frag_coord.y) % param.density <= param.width) {
         frag_color = vec3<f32>(gray);
     }
-    if (gray < 0.75) && (abs((frag_coord.x - frag_coord.y) % params.density) <= params.width) {
+    if (gray < param.hatch_2) && (abs((frag_coord.x - frag_coord.y)) % param.density <= param.width) {
         frag_color = vec3<f32>(gray);
     }
      
-    if (gray < 0.5) && ((frag_coord.x + frag_coord.y - params.half_density) % params.density <= params.width) {
+    if (gray < param.hatch_3) && (abs((frag_coord.x + frag_coord.y - param.half_density)) % param.density <= param.width) {
         frag_color = vec3<f32>(gray);
     }
-    if (gray < 0.25) && (abs((frag_coord.x - frag_coord.y - params.half_density) % params.density) <= params.width) {
-        frag_color = vec3<f32>(gray);
+    if (gray < param.hatch_4) && (abs((frag_coord.x - frag_coord.y - param.half_density)) % param.density <= param.width) {
+        frag_color = vec3<f32>(0.0);
     }
 
-    frag_color = frag_color * black_edge;
+    frag_color = min(vec3<f32>(black_edge), frag_color);
+    var alpha = 1.0;
+    if (param.opaque_background_color == 0.0) {
+        alpha = 1.0 - step(0.3, length(frag_color));
+    }
 
-    return vec4<f32>(frag_color, 1.0);
+    return vec4<f32>(frag_color, alpha);
 }

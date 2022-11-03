@@ -1,8 +1,9 @@
 use app_surface::AppSurface;
 use gpu_image4::WgpuCanvas;
-use std::future::Future;
 use winit::event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
+
+const TEX_KEY: &'static str = "any string";
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn run() {
@@ -45,7 +46,7 @@ pub fn run() {
 async fn create_instance() -> (EventLoop<()>, WgpuCanvas) {
     let event_loop = EventLoop::new();
     let size = winit::dpi::Size::Logical(winit::dpi::LogicalSize {
-        width: 786.0,
+        width: 512.0,
         height: 512.0,
     });
     let builder = winit::window::WindowBuilder::new()
@@ -86,10 +87,15 @@ async fn create_instance() -> (EventLoop<()>, WgpuCanvas) {
 
     let app_surface = AppSurface::new(window).await;
     let mut canvas = WgpuCanvas::new(app_surface);
-    canvas.set_filter(gpu_image4::FilterType::CrossHatch, 16.0);
+    canvas.set_filter(gpu_image4::FilterType::CrossHatch, true, 10.0);
+    // canvas.set_filter(gpu_image4::FilterType::EdgeDetection, false, 0.15);
 
     let (texture, size) = gpu_image4::get_a_texture(&canvas.app_surface);
-    canvas.set_external_texture(texture, (size.width as f32, size.height as f32));
+    canvas.set_external_texture(
+        texture,
+        TEX_KEY.to_string(),
+        (size.width as f32, size.height as f32),
+    );
 
     (event_loop, canvas)
 }
@@ -132,7 +138,7 @@ fn start_event_loop(event_loop: EventLoop<()>, canvas: WgpuCanvas) {
                 _ => {}
             },
             Event::RedrawRequested(_) => {
-                canvas.enter_frame();
+                canvas.enter_frame(TEX_KEY.to_string());
             }
             _ => (),
         }

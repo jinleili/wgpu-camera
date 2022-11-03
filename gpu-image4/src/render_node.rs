@@ -1,18 +1,21 @@
 use app_surface::AppSurface;
 use bytemuck::Pod;
-use idroid::node::BindingGroupSetting;
-use idroid::vertex::Vertex;
-use idroid::{geometry::Plane, math::Rect, AnyTexture};
-use idroid::{BufferObj, MVPUniform};
+use idroid::{geometry::Plane, vertex::Vertex, BufferObj};
+use std::collections::HashMap;
 use wgpu::util::DeviceExt;
-use wgpu::{Buffer, PipelineLayout, ShaderModule, StorageTextureAccess, Texture, TextureFormat};
+use wgpu::{
+    BindingType, Buffer, BufferBindingType, PipelineLayout, ShaderModule, ShaderStages, Texture,
+    TextureFormat,
+};
 
 pub struct RenderNode {
     pub sampler: wgpu::Sampler,
     vertex_buf: BufferObj,
     index_buf: wgpu::Buffer,
     index_count: usize,
-    pub bg_setting: BindingGroupSetting,
+    bind_group_layout: wgpu::BindGroupLayout,
+    // bind_group: Option<wgpu::BindGroup>,
+    bind_groups: HashMap<String, wgpu::BindGroup>,
     array_stride: wgpu::BufferAddress,
     vertex_attributes: Vec<wgpu::VertexAttribute>,
     pipeline_layout: PipelineLayout,
@@ -22,21 +25,10 @@ pub struct RenderNode {
 
 #[allow(dead_code)]
 impl RenderNode {
-    pub fn new<T: Vertex + Pod>(
-        app_surface: &AppSurface,
-        uniform_buffers: Vec<&BufferObj>,
-        storage_buffers: Vec<&BufferObj>,
-        tex_views: Vec<(&AnyTexture, Option<StorageTextureAccess>)>,
-        shader_module: &ShaderModule,
-    ) -> Self {
+    pub fn new<T: Vertex + Pod>(app_surface: &AppSurface, shader_module: &ShaderModule) -> Self {
         let device = &app_surface.device;
         let corlor_format = app_surface.config.format;
-        let stages: Vec<wgpu::ShaderStages> = vec![
-            wgpu::ShaderStages::VERTEX,
-            wgpu::ShaderStages::FRAGMENT,
-            wgpu::ShaderStages::FRAGMENT,
-            wgpu::ShaderStages::FRAGMENT,
-        ];
+
         let sampler = app_surface.device.create_sampler(&wgpu::SamplerDescriptor {
             label: None,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
@@ -48,14 +40,47 @@ impl RenderNode {
             ..Default::default()
         });
 
-        let bg_setting = BindingGroupSetting::new(
-            device,
-            uniform_buffers,
-            storage_buffers,
-            tex_views,
-            vec![&sampler],
-            stages,
-        );
+        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: ShaderStages::VERTEX,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(0),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(0),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+            label: None,
+        });
 
         let (vertex_data, index_data) = Plane::new(1, 1).generate_vertices();
         let vertex_buf = BufferObj::create_buffer(
@@ -76,7 +101,7 @@ impl RenderNode {
 
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
-            bind_group_layouts: &[&bg_setting.bind_group_layout],
+            bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
         // Create the render pipeline
@@ -94,7 +119,9 @@ impl RenderNode {
             vertex_buf,
             index_buf,
             index_count: index_data.len(),
-            bg_setting,
+            bind_group_layout,
+            // bind_group: None,
+            bind_groups: HashMap::new(),
             array_stride,
             vertex_attributes,
             pipeline_layout,
@@ -119,61 +146,71 @@ impl RenderNode {
         );
     }
 
-    pub fn update_binding_group(
+    pub fn update_bind_group(
         &mut self,
         app_surface: &AppSurface,
         mvp_buffer: &Buffer,
         params_buffer: &Buffer,
         external_texture: &Texture,
+        tex_key: String,
     ) {
         let texture_view = external_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        self.bg_setting.bind_group =
-            app_surface
-                .device
-                .create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &self.bg_setting.bind_group_layout,
-                    entries: &[
-                        wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: mvp_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 1,
-                            resource: params_buffer.as_entire_binding(),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 2,
-                            resource: wgpu::BindingResource::TextureView(&texture_view),
-                        },
-                        wgpu::BindGroupEntry {
-                            binding: 3,
-                            resource: wgpu::BindingResource::Sampler(&self.sampler),
-                        },
-                    ],
-                    label: None,
-                });
+        let bind_group = app_surface
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: mvp_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: params_buffer.as_entire_binding(),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: wgpu::BindingResource::Sampler(&self.sampler),
+                    },
+                ],
+                label: None,
+            });
+        self.bind_groups.insert(tex_key, bind_group);
+    }
+
+    pub fn remove_bind_group(&mut self, tex_key: String) {
+        self.bind_groups.remove(&tex_key);
     }
 
     pub fn begin_render_pass(
         &self,
         frame_view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
+        tex_key: String,
     ) {
+        let bind_group = self.bind_groups.get(&tex_key);
+        if bind_group.is_none() {
+            return;
+        }
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: frame_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: true,
                 },
             })],
             depth_stencil_attachment: None,
         });
         rpass.set_pipeline(&self.pipeline);
-        rpass.set_bind_group(0, &self.bg_setting.bind_group, &[]);
+        rpass.set_bind_group(0, bind_group.unwrap(), &[]);
         rpass.set_index_buffer(self.index_buf.slice(..), wgpu::IndexFormat::Uint32);
         rpass.set_vertex_buffer(0, self.vertex_buf.buffer.slice(..));
         rpass.set_viewport(
@@ -210,7 +247,11 @@ impl RenderNode {
             fragment: Some(wgpu::FragmentState {
                 module: shader_module,
                 entry_point: "fs_main",
-                targets: &[Some(corlor_format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: corlor_format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleList,
