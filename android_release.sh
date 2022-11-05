@@ -1,8 +1,10 @@
 # build to Android targets
+cd gpu-image4
 cargo so b --lib --target aarch64-linux-android --release
 # cargo so b --lib --target armv7-linux-androideabi --release
 
 # copy .so files to jniLibs folder
+cd ../
 ARM64="Android/app/libs/arm64-v8a"
 ARMv7a="Android/app/libs/armeabi-v7a"
 if [ ! -d "$ARM64" ]; then

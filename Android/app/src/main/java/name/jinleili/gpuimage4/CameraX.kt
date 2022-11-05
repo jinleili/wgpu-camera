@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.util.Size
 import android.widget.Toast
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -26,6 +27,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
+import java.util.concurrent.Executors
 
 private const val TAG = "wgpu"
 
@@ -34,6 +36,8 @@ class CameraX(
     private var owner: LifecycleOwner,
 ) {
     private var imageCapture: ImageCapture? = null
+    private val executor = Executors.newSingleThreadExecutor()
+    private lateinit var bitmapBuffer: Bitmap
 
     fun startCameraPreviewView(): PreviewView {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -43,6 +47,24 @@ class CameraX(
         }
 
         imageCapture = ImageCapture.Builder().build()
+        val imageAnalysis = ImageAnalysis.Builder()
+            // enable the following line if RGBA output is needed.
+            // .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+            .setTargetResolution(Size(1280, 720))
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+        imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { imageProxy ->
+            val rotationDegrees = imageProxy.imageInfo.rotationDegrees
+            if (!::bitmapBuffer.isInitialized) {
+                // RGB image buffer are initialized only once
+                // the analyzer has started running
+                bitmapBuffer = Bitmap.createBitmap(
+                    imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888)
+            }
+            // after done, release the ImageProxy object
+            imageProxy.close()
+        })
+
 
         val camSelector =
             CameraSelector.Builder().requireLensFacing(CameraSelector.LENS_FACING_BACK).build()

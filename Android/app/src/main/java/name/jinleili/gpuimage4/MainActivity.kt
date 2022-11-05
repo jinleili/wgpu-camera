@@ -41,14 +41,14 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    if (shouldShowCamera.value) {
-                        AndroidView(
-                            modifier = Modifier.fillMaxSize(),
-                            factory = { cameraX.startCameraPreviewView() }
-                        )
-                    } else {
+//                    if (shouldShowCamera.value) {
+//                        AndroidView(
+//                            modifier = Modifier.fillMaxSize(),
+//                            factory = { cameraX.startCameraPreviewView() }
+//                        )
+//                    } else {
                         SurfaceCard()
-                    }
+//                    }
                 }
             }
         }

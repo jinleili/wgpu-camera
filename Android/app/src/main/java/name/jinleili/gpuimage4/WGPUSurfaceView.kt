@@ -35,6 +35,7 @@ class WGPUSurfaceView : SurfaceView, SurfaceHolder.Callback2 {
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         holder.let { h ->
+            rustBrige.test()
             wgpuObj = rustBrige.createWgpuCanvas(h.surface)
             setWillNotDraw(false)
         }

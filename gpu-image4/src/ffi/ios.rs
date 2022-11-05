@@ -1,17 +1,18 @@
 use crate::wgpu_canvas::WgpuCanvas;
 use app_surface::{AppSurface, IOSViewObj};
+use std::ffi::c_void;
 use std::os::raw::c_char;
 
 #[no_mangle]
-pub fn create_wgpu_canvas(ios_obj: IOSViewObj) -> *mut libc::c_void {
+pub fn create_wgpu_canvas(ios_obj: IOSViewObj) -> *mut c_void {
     let wgpu_obj = WgpuCanvas::new(AppSurface::new(ios_obj));
     let box_obj = Box::new(wgpu_obj);
-    Box::into_raw(box_obj) as *mut libc::c_void
+    Box::into_raw(box_obj) as *mut c_void
 }
 
 #[no_mangle]
 pub fn set_filter(
-    wgpu_obj: *mut libc::c_void,
+    wgpu_obj: *mut c_void,
     ty: crate::FilterType,
     opaque_background_color: i32,
     param: f32,
@@ -26,13 +27,13 @@ pub fn set_filter(
 }
 
 #[no_mangle]
-pub fn change_filter_param(wgpu_obj: *mut libc::c_void, param: f32) {
+pub fn change_filter_param(wgpu_obj: *mut c_void, param: f32) {
     let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
     wgpu_obj.change_filter_param(param);
 }
 
 #[no_mangle]
-pub fn remove_texture(wgpu_obj: *mut libc::c_void, tex_key: *const c_char) {
+pub fn remove_texture(wgpu_obj: *mut c_void, tex_key: *const c_char) {
     let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
     let tex_key = crate::cchar_to_string(tex_key);
     wgpu_obj.remove_texture(tex_key);
@@ -40,7 +41,7 @@ pub fn remove_texture(wgpu_obj: *mut libc::c_void, tex_key: *const c_char) {
 
 #[no_mangle]
 pub fn set_external_texture(
-    wgpu_obj: *mut libc::c_void,
+    wgpu_obj: *mut c_void,
     raw: *mut std::ffi::c_void,
     tex_key: *const c_char,
     width: i32,
@@ -96,7 +97,7 @@ pub fn set_external_texture(
 }
 
 #[no_mangle]
-pub fn enter_frame(wgpu_obj: *mut libc::c_void, tex_key: *const c_char) {
+pub fn enter_frame(wgpu_obj: *mut c_void, tex_key: *const c_char) {
     let wgpu_obj = unsafe { &mut *(wgpu_obj as *mut WgpuCanvas) };
     let tex_key = crate::cchar_to_string(tex_key);
     wgpu_obj.enter_frame(tex_key);
