@@ -7,12 +7,21 @@ use jni::JNIEnv;
 use jni_fn::jni_fn;
 use log::{info, Level};
 
+mod session_output;
+use session_output::SessionOutput;
+mod camera_manager;
+use camera_manager::*;
+
 const TEX_KEY: &'static str = "any string";
 #[cfg_attr(target_os = "android", path = "a_hardware_buffer.rs")]
 mod a_hardware_buffer;
 
 #[cfg(target_os = "android")]
 #[link(name = "camera2ndk")]
+extern "C" {}
+
+#[cfg(target_os = "android")]
+#[link(name = "mediandk")]
 extern "C" {}
 
 #[no_mangle]
@@ -22,9 +31,23 @@ pub fn createWgpuCanvas(env: *mut JNIEnv, _: JClass, surface: jobject) -> jlong 
     let canvas = WgpuCanvas::new(AppSurface::new(env as *mut _, surface));
     info!("WgpuCanvas created!");
     unsafe {
-        camera();
+        let session_out = SessionOutput::new(
+            canvas.app_surface.config.width as i32,
+            canvas.app_surface.config.height as i32,
+        );
+        camera(session_out.native_window);
     }
     Box::into_raw(Box::new(canvas)) as jlong
+}
+
+#[no_mangle]
+#[jni_fn("name.jinleili.gpuimage4.RustBridge")]
+pub fn camera(env: *mut JNIEnv, _: JClass, surface: jobject) {
+    android_logger::init_once(Config::default().with_min_level(Level::Info));
+    let app_surface = AppSurface::new(env as *mut _, surface);
+    unsafe {
+        camera(app_surface.native_window.get_raw_window());
+    }
 }
 
 #[no_mangle]
@@ -40,31 +63,4 @@ pub fn enterFrame(_env: *mut JNIEnv, _: JClass, obj: jlong) {
 #[jni_fn("name.jinleili.gpuimage4.RustBridge")]
 pub fn dropWgpuCanvas(_env: *mut JNIEnv, _: JClass, obj: jlong) {
     let _obj: Box<WgpuCanvas> = unsafe { Box::from_raw(obj as *mut _) };
-}
-
-unsafe fn camera() {
-    use ash::vk;
-    let manager = ndk_sys::ACameraManager_create();
-    let mut ids: *mut ndk_sys::ACameraIdList = std::ptr::null_mut();
-    // let res = ndk_sys::ACameraManager_getCameraIdList(manager, &mut ids as *mut *mut _);
-    let res = ndk_sys::ACameraManager_getCameraIdList(manager, &mut ids as _);
-    if res == ndk_sys::camera_status_t::ACAMERA_OK {
-        log::error!("Failed to acquire camera list.");
-    }
-    if (*ids).numCameras < 1 {
-        log::error!("No cameras found.")
-    }
-
-    //
-    let slice = unsafe { std::slice::from_raw_parts((*ids).cameraIds, (*ids).numCameras as _) };
-    let selected_camera = slice[0];
-    let mut device: *mut ndk_sys::ACameraDevice = std::ptr::null_mut();
-    let res = ndk_sys::ACameraManager_openCamera(
-        manager,
-        selected_camera,
-        std::ptr::null_mut(),
-        &mut device as _,
-    );
-
-    log::info!("camera res: {:?},  ids: {:?}", res, &ids);
 }

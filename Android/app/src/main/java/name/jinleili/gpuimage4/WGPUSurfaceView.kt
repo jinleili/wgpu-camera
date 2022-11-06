@@ -8,7 +8,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 
 class WGPUSurfaceView : SurfaceView, SurfaceHolder.Callback2 {
-    private var rustBrige = RustBridge()
+    private var rustBrige = RustBridge.getInstance()
     private var wgpuObj: Long = Long.MAX_VALUE
 
     constructor(context: Context) : super(context) {
@@ -35,7 +35,6 @@ class WGPUSurfaceView : SurfaceView, SurfaceHolder.Callback2 {
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         holder.let { h ->
-            rustBrige.test()
             wgpuObj = rustBrige.createWgpuCanvas(h.surface)
             setWillNotDraw(false)
         }
