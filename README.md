@@ -1,4 +1,4 @@
-# GPUImage4
+# wgpu-image
 
 ```sh
 RUSTFLAGS=--cfg=web_sys_unstable_apis cargo run --release --package run-wasm --

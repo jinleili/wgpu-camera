@@ -1,4 +1,6 @@
-use crate::{render_node::RenderNode, shader_manager::ShaderManager, FilterType};
+use crate::{
+    fragment_filter_node::FragmentFilterNode, shader_manager::ShaderManager, FilterNode, FilterType,
+};
 use app_surface::{AppSurface, SurfaceFrame};
 use idroid::vertex::PosTex;
 use idroid::{BufferObj, MVPUniform};
@@ -8,7 +10,7 @@ pub struct WgpuCanvas {
     shader_manager: ShaderManager,
     mvp_buffer: BufferObj,
     params_buffer: BufferObj,
-    view_node: Option<RenderNode>,
+    view_node: Option<Box<dyn FilterNode>>,
     current_filter: FilterType,
     img_size: (f32, f32),
     opaque_background_color: bool,
@@ -90,7 +92,7 @@ impl WgpuCanvas {
         };
         self.create_render_node_if_needed();
         self.view_node.as_mut().map(|node| {
-            node.viewport = viewport;
+            node.update_viewport(viewport);
             node.update_bind_group(
                 &self.app_surface,
                 &self.mvp_buffer.buffer,
@@ -108,14 +110,14 @@ impl WgpuCanvas {
     }
 
     pub fn enter_frame(&mut self, tex_key: String) {
-        if let Some(view_node) = &self.view_node {
+        if let Some(view_node) = &mut self.view_node {
             let device = &self.app_surface.device;
             let queue = &self.app_surface.queue;
             let (frame, view) = self.app_surface.get_current_frame_view();
             let mut encoder =
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             {
-                view_node.begin_render_pass(&view, &mut encoder, tex_key);
+                view_node.enter_frame(&view, &mut encoder, tex_key);
             }
             queue.submit(Some(encoder.finish()));
             frame.present();
@@ -133,12 +135,12 @@ impl WgpuCanvas {
     fn create_render_node_if_needed(&mut self) {
         if self.view_node.is_none() {
             let filter_type = FilterType::Original;
-            let node = RenderNode::new::<PosTex>(
+            let node = FragmentFilterNode::new(
                 &self.app_surface,
                 &self.shader_manager.get_shader_ref(filter_type),
             );
 
-            self.view_node = Some(node);
+            self.view_node = Some(Box::new(node));
             self.current_filter = filter_type;
         }
     }

@@ -1,4 +1,8 @@
+use app_surface::AppSurface;
+use idroid::vertex::Vertex;
+use wgpu::{Buffer, Texture};
 mod wgpu_canvas;
+use bytemuck::Pod;
 pub use wgpu_canvas::WgpuCanvas;
 
 #[cfg_attr(target_os = "ios", path = "ffi/ios.rs")]
@@ -19,7 +23,29 @@ pub enum FilterType {
     EdgeDetection,
 }
 
-mod render_node;
+pub(crate) trait FilterNode {
+    fn change_filter(&mut self, app_surface: &AppSurface, shader_module: &wgpu::ShaderModule);
+    fn update_viewport(&mut self, viewport: (f32, f32, f32, f32));
+    fn update_bind_group(
+        &mut self,
+        app_surface: &AppSurface,
+        mvp_buffer: &Buffer,
+        params_buffer: &Buffer,
+        external_texture: &Texture,
+        tex_key: String,
+    );
+    fn remove_bind_group(&mut self, tex_key: String);
+    fn enter_frame(
+        &mut self,
+        frame_view: &wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        tex_key: String,
+    );
+}
+
+mod compute_filter_node;
+mod display_node;
+mod fragment_filter_node;
 mod shader_manager;
 
 #[repr(C)]

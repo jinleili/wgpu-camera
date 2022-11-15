@@ -1,21 +1,20 @@
 use app_surface::AppSurface;
 use bytemuck::Pod;
 use idroid::{geometry::Plane, vertex::Vertex, BufferObj};
-use std::collections::HashMap;
+use wgc::binding_model::BindGroup;
 use wgpu::util::DeviceExt;
 use wgpu::{
     BindingType, Buffer, BufferBindingType, PipelineLayout, ShaderModule, ShaderStages, Texture,
     TextureFormat,
 };
 
-pub struct RenderNode {
-    pub sampler: wgpu::Sampler,
+pub struct DisplayNode {
+     sampler: wgpu::Sampler,
     vertex_buf: BufferObj,
     index_buf: wgpu::Buffer,
     index_count: usize,
-    bind_group_layout: wgpu::BindGroupLayout,
-    // bind_group: Option<wgpu::BindGroup>,
-    bind_groups: HashMap<String, wgpu::BindGroup>,
+     bind_group_layout: wgpu::BindGroupLayout,
+    bind_group: Option<wgpu::BindGroup>,
     array_stride: wgpu::BufferAddress,
     vertex_attributes: Vec<wgpu::VertexAttribute>,
     pipeline_layout: PipelineLayout,
@@ -24,7 +23,7 @@ pub struct RenderNode {
 }
 
 #[allow(dead_code)]
-impl RenderNode {
+impl DisplayNode {
     pub fn new<T: Vertex + Pod>(app_surface: &AppSurface, shader_module: &ShaderModule) -> Self {
         let device = &app_surface.device;
         let corlor_format = app_surface.config.format;
@@ -114,14 +113,13 @@ impl RenderNode {
             shader_module,
         );
 
-        RenderNode {
+        DisplayNode {
             sampler,
             vertex_buf,
             index_buf,
             index_count: index_data.len(),
             bind_group_layout,
-            // bind_group: None,
-            bind_groups: HashMap::new(),
+            bind_group: None,
             array_stride,
             vertex_attributes,
             pipeline_layout,
@@ -135,28 +133,14 @@ impl RenderNode {
         }
     }
 
-    pub fn change_filter(&mut self, app_surface: &AppSurface, shader_module: &ShaderModule) {
-        self.pipeline = Self::create_pipeline(
-            &app_surface.device,
-            app_surface.config.format,
-            &self.pipeline_layout,
-            self.array_stride,
-            &self.vertex_attributes,
-            shader_module,
-        );
-    }
-
-    pub fn update_bind_group(
-        &mut self,
+    pub fn create_bind_group(
+        &self,
         app_surface: &AppSurface,
         mvp_buffer: &Buffer,
         params_buffer: &Buffer,
-        external_texture: &Texture,
-        tex_key: String,
-    ) {
-        let texture_view = external_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let bind_group = app_surface
+        texture_view: &wgpu::TextureView,
+    ) -> wgpu::BindGroup {
+        app_surface
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &self.bind_group_layout,
@@ -171,7 +155,7 @@ impl RenderNode {
                     },
                     wgpu::BindGroupEntry {
                         binding: 2,
-                        resource: wgpu::BindingResource::TextureView(&texture_view),
+                        resource: wgpu::BindingResource::TextureView(texture_view),
                     },
                     wgpu::BindGroupEntry {
                         binding: 3,
@@ -179,24 +163,30 @@ impl RenderNode {
                     },
                 ],
                 label: None,
-            });
-        self.bind_groups.insert(tex_key, bind_group);
+            })
     }
 
-    pub fn remove_bind_group(&mut self, tex_key: String) {
-        self.bind_groups.remove(&tex_key);
+    pub fn change_filter(&mut self, app_surface: &AppSurface, shader_module: &ShaderModule) {
+        self.pipeline = Self::create_pipeline(
+            &app_surface.device,
+            app_surface.config.format,
+            &self.pipeline_layout,
+            self.array_stride,
+            &self.vertex_attributes,
+            shader_module,
+        );
     }
 
     pub fn begin_render_pass(
         &self,
         frame_view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
-        tex_key: String,
+        bind_group: Option<&wgpu::BindGroup>,
     ) {
-        let bind_group = self.bind_groups.get(&tex_key);
-        if bind_group.is_none() {
-            return;
-        }
+        let bg = match bind_group {
+            Some(bg) => bg,
+            None => self.bind_group.as_ref().unwrap(),
+        };
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -210,7 +200,7 @@ impl RenderNode {
             depth_stencil_attachment: None,
         });
         rpass.set_pipeline(&self.pipeline);
-        rpass.set_bind_group(0, bind_group.unwrap(), &[]);
+        rpass.set_bind_group(0, bg, &[]);
         rpass.set_index_buffer(self.index_buf.slice(..), wgpu::IndexFormat::Uint32);
         rpass.set_vertex_buffer(0, self.vertex_buf.buffer.slice(..));
         rpass.set_viewport(
