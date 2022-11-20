@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # build to Android target
-cd gpu-image4
+cd wgpu-camera
 RUST_BACKTRACE=full RUST_LOG=wgpu_hal=debug cargo so b --lib --target aarch64-linux-android
 # RUST_LOG=wgpu_hal=debug cargo so b --features angle --lib --target armv7-linux-androideabi
 # RUST_BACKTRACE=full RUST_LOG=wgpu_hal=debug cargo so b --lib --target aarch64-linux-android 
@@ -19,5 +19,5 @@ if [ ! -d "$ARMv7a" ]; then
     mkdir "$ARMv7a"
 fi
 
-cp target/aarch64-linux-android/debug/libgpu_image4.so "${ARM64}/libgpu_image4.so"
-# cp target/armv7-linux-androideabi/debug/libgpu_image4.so "${ARMv7a}/libgpu_image4.so"
+cp target/aarch64-linux-android/debug/libwgpu_camera.so "${ARM64}/libwgpu_camera.so"
+# cp target/armv7-linux-androideabi/debug/libwgpu_camera.so "${ARMv7a}/libwgpu_camera.so"

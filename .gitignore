@@ -10,3 +10,5 @@ local.properties
 **/*.so 
 JetpackCompose/
 debug.xcodeproj/
+iOS/libs/debug/*
+iOS/libs/release/*

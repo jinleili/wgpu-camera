@@ -742,8 +742,7 @@ dependencies = [
 [[package]]
 name = "glow"
 version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8bd5877156a19b8ac83a29b2306fe20537429d318f3ff0a1a2119f8d9c61919"
+source = "git+https://github.com/grovesNL/glow/?rev=c8a011fcd57a5c68cc917ed394baa484bdefc909#c8a011fcd57a5c68cc917ed394baa484bdefc909"
 dependencies = [
  "js-sys",
  "slotmap",
@@ -788,42 +787,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "363e3677e55ad168fef68cf9de3a4a310b53124c5e784c53a1d70e92d23f2126"
 dependencies = [
  "bitflags",
-]
-
-[[package]]
-name = "gpu-image4"
-version = "0.1.0"
-dependencies = [
- "android_logger",
- "app-surface",
- "ash",
- "async-executor",
- "bytemuck",
- "console_error_panic_hook",
- "console_log",
- "env_logger 0.9.1",
- "idroid",
- "image",
- "jni",
- "jni_fn",
- "js-sys",
- "libc",
- "log",
- "metal",
- "nalgebra-glm",
- "ndk-sys",
- "noise",
- "png",
- "pollster",
- "rand",
- "raw-window-handle 0.5.0",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "wgpu",
- "wgpu-core",
- "wgpu-hal",
- "winit",
 ]
 
 [[package]]
@@ -1031,6 +994,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "log-panics"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68f9dd8546191c1850ecf67d22f5ff00a935b890d0e84713159a55495cc2ac5f"
+dependencies = [
+ "log",
+]
+
+[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1116,8 +1088,7 @@ dependencies = [
 [[package]]
 name = "naga"
 version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "262d2840e72dbe250e8cf2f522d080988dfca624c4112c096238a4845f591707"
+source = "git+https://github.com/gfx-rs/naga?rev=c52d9102#c52d91023d43092323615fcc746162e478033f26"
 dependencies = [
  "bit-set",
  "bitflags",
@@ -2238,8 +2209,6 @@ dependencies = [
 [[package]]
 name = "wgpu"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2272b17bffc8a0c7d53897435da7c1db587c87d3a14e8dae9cdb8d1d210fc0f"
 dependencies = [
  "arrayvec 0.7.2",
  "js-sys",
@@ -2258,10 +2227,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "wgpu-camera"
+version = "0.1.0"
+dependencies = [
+ "android_logger",
+ "app-surface",
+ "ash",
+ "async-executor",
+ "bytemuck",
+ "console_error_panic_hook",
+ "console_log",
+ "env_logger 0.9.1",
+ "idroid",
+ "image",
+ "jni",
+ "jni_fn",
+ "js-sys",
+ "libc",
+ "log",
+ "log-panics",
+ "metal",
+ "nalgebra-glm",
+ "ndk",
+ "ndk-sys",
+ "noise",
+ "png",
+ "pollster",
+ "rand",
+ "raw-window-handle 0.5.0",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "wgpu",
+ "wgpu-core",
+ "wgpu-hal",
+ "winit",
+]
+
+[[package]]
 name = "wgpu-core"
 version = "0.14.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73d14cad393054caf992ee02b7da6a372245d39a484f7461c1f44f6f6359bd28"
 dependencies = [
  "arrayvec 0.7.2",
  "bit-vec",
@@ -2283,9 +2288,7 @@ dependencies = [
 
 [[package]]
 name = "wgpu-hal"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cc320a61acb26be4f549c9b1b53405c10a223fbfea363ec39474c32c348d12f"
+version = "0.14.0"
 dependencies = [
  "android_system_properties",
  "arrayvec 0.7.2",
@@ -2322,9 +2325,7 @@ dependencies = [
 
 [[package]]
 name = "wgpu-types"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb6b28ef22cac17b9109b25b3bf8c9a103eeb293d7c5f78653979b09140375f6"
+version = "0.14.0"
 dependencies = [
  "bitflags",
 ]

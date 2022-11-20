@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="name.jinleili.gpuimage4">
+    package="name.jinleili.wgpu_camera">
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
     <uses-feature android:name="android.hardware.camera" />
@@ -14,7 +14,7 @@
     <uses-feature android:name="android.hardware.devices.front.autofocus" />
 
     <application
-        android:name=".WGPUApplication"
+        android:name="name.jinleili.wgpu_camera.WGPUApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -22,14 +22,14 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.GPUImage4"
+        android:theme="@style/Theme.WGPUCamera"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="name.jinleili.wgpu_camera.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.GPUImage4">
+            android:theme="@style/Theme.WGPUCamera">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

@@ -1,9 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "gpu-image4",
+    "wgpu-camera",
     "run-wasm"
 ]
+default-members = ["wgpu-camera"]
 
 [workspace.package]
 edition = "2021"
@@ -12,16 +13,21 @@ authors = ["jinleili"]
 
 [workspace.dependencies]
 ash = "0.37"
-wgpu = "0.14"
-wgc = { package = "wgpu-core", version = "0.14" }
-hal = { package = "wgpu-hal", version = "0.14" }
+# wgpu = "0.14"
+# wgc = { package = "wgpu-core", version = "0.14" }
+# hal = { package = "wgpu-hal", version = "0.14" }
 # wgpu = { path = "../forks/wgpu/wgpu" }
 # wgc = { package = "wgpu-core", path = "../forks/wgpu/wgpu-core" }
 # hal = { package = "wgpu-hal", path = "../forks/wgpu/wgpu-hal" }
+wgpu = { path = "../forks/wgpu-i509VCB/wgpu" }
+wgc = { package = "wgpu-core", path = "../forks/wgpu-i509VCB/wgpu-core" }
+hal = { package = "wgpu-hal", path = "../forks/wgpu-i509VCB/wgpu-hal" }
 # app-surface = { git = "https://github.com/jinleili/wgpu-on-app", tag = "0.1.2" }
 app-surface = { path = "../idroid/wgpu-on-app/app-surface" }
 idroid = { path = "../idroid/idroid" }
 
+[profile.dev]
+split-debuginfo = "unpacked"
 
 [profile.release]
 # lto = true # VERY slightly smaller wasm
