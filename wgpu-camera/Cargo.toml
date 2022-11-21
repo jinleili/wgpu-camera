@@ -17,7 +17,7 @@ log = "0.4"
 noise = { version = "0.7", default-features = false }
 pollster = "0.2"
 rand = { version = "0.7.2" }
-wgpu.workspace = true
+wgpu = { workspace = true, features = ["trace"] }
 wgc = { workspace = true }
 hal = { workspace = true }
 app-surface.workspace = true

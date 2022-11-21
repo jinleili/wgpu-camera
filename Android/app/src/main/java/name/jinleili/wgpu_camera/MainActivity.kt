@@ -26,7 +26,6 @@ import name.jinleili.wgpu_camera.ui.theme.WGPUCameraTheme
 
 class MainActivity : ComponentActivity() {
     private var shouldShowCamera: MutableState<Boolean> = mutableStateOf(false)
-    private var cameraX: CameraX = CameraX(this, this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,11 +36,6 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colors.background
                 ) {
                     if (shouldShowCamera.value) {
-//                        AndroidView(
-//                            modifier = Modifier.fillMaxSize(),
-//                            factory = { cameraX.startCameraPreviewView() }
-//                        )
-//                    } else {
                         SurfaceCard()
                     }
                 }

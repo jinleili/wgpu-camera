@@ -36,7 +36,7 @@ class WGPUSurfaceView : SurfaceView, SurfaceHolder.Callback2 {
     override fun surfaceCreated(holder: SurfaceHolder) {
         holder.let { h ->
             wgpuObj = rustBrige.create_cameracanvas(h.surface)
-            rustBrige.capture_one_frame(wgpuObj)
+            rustBrige.start_capturing(wgpuObj)
 
             setWillNotDraw(false)
         }
@@ -44,6 +44,7 @@ class WGPUSurfaceView : SurfaceView, SurfaceHolder.Callback2 {
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         if (wgpuObj != Long.MAX_VALUE) {
+            rustBrige.start_capturing(wgpuObj)
             rustBrige.drop_camera_canvas(wgpuObj)
             wgpuObj = Long.MAX_VALUE
         }

@@ -5,8 +5,7 @@ use ash::vk::{
     SamplerYcbcrConversionInfo, StructureType,
 };
 use hal::{api::Vulkan, Api};
-use ndk::hardware_buffer::{HardwareBuffer, HardwareBufferDesc, HardwareBufferUsage};
-use ndk_sys::AHardwareBuffer;
+use ndk::hardware_buffer::HardwareBuffer;
 use std::mem::MaybeUninit;
 
 pub(crate) unsafe fn get_external_texture(
@@ -25,127 +24,135 @@ pub(crate) unsafe fn get_external_texture(
     let width = desc.width;
     let height = desc.height;
 
-    let (image, format_info, sampler_info) = ac.device.as_hal::<Vulkan, _, _>(|device| {
-        let device = device.unwrap().raw_device();
-        // Get properties from a AHardwareBuffer
-        let mut format_info = AndroidHardwareBufferFormatPropertiesANDROID::default();
-        let mut properties_info = AndroidHardwareBufferPropertiesANDROID::default();
-        properties_info.p_next =
-            <*mut AndroidHardwareBufferFormatPropertiesANDROID>::cast(&mut format_info);
-        let res = (ac.ahb_fn.get_android_hardware_buffer_properties_android)(
-            device.handle(),
-            buffer.as_ptr() as _,
-            &mut properties_info as _,
-        );
-        if res != vk::Result::SUCCESS {
-            log::error!("Couldn't get external buffer properties.: {:?}", res);
-        }
-        log::info!("format_info: {:?}", format_info);
-
-        // Create an image to bind to this AHardwareBuffer
-        let mut external_create_info = vk::ExternalMemoryImageCreateInfo::default();
-        external_create_info.handle_types =
-            vk::ExternalMemoryHandleTypeFlags::ANDROID_HARDWARE_BUFFER_ANDROID;
-        let mut external_format = ExternalFormatANDROID::default();
-        external_format.p_next =
-            <*mut vk::ExternalMemoryImageCreateInfo>::cast(&mut external_create_info);
-
-        let mut create_info = vk::ImageCreateInfo {
-            s_type: StructureType::IMAGE_CREATE_INFO,
-            p_next: <*const ExternalFormatANDROID>::cast(&mut external_format),
-            flags: vk::ImageCreateFlags::from_raw(0),
-            image_type: vk::ImageType::TYPE_2D,
-            format: match format_info.format {
-                Format::UNDEFINED => {
-                    external_format.external_format = format_info.external_format;
-                    Format::UNDEFINED
+    let (image, format_info, sampler_info) =
+        ac.canvas
+            .app_surface
+            .device
+            .as_hal::<Vulkan, _, _>(|device| {
+                let device = device.unwrap().raw_device();
+                // Get properties from a AHardwareBuffer
+                let mut format_info = AndroidHardwareBufferFormatPropertiesANDROID::default();
+                let mut properties_info = AndroidHardwareBufferPropertiesANDROID::default();
+                properties_info.p_next =
+                    <*mut AndroidHardwareBufferFormatPropertiesANDROID>::cast(&mut format_info);
+                let res = (ac.ahb_fn.get_android_hardware_buffer_properties_android)(
+                    device.handle(),
+                    buffer.as_ptr() as _,
+                    &mut properties_info as _,
+                );
+                if res != vk::Result::SUCCESS {
+                    log::error!("Couldn't get external buffer properties.: {:?}", res);
                 }
-                _ => format_info.format,
-            },
-            // format: vk::Format::R8G8B8A8_UNORM,
-            extent: vk::Extent3D {
-                width,
-                height,
-                depth: 1,
-            },
-            mip_levels: 1,
-            array_layers: desc.layers,
-            samples: vk::SampleCountFlags::TYPE_1,
-            tiling: vk::ImageTiling::OPTIMAL,
-            usage: vk::ImageUsageFlags::SAMPLED
-                | vk::ImageUsageFlags::TRANSFER_DST
-                | vk::ImageUsageFlags::STORAGE,
-            sharing_mode: vk::SharingMode::EXCLUSIVE,
-            queue_family_index_count: 0,
-            p_queue_family_indices: ::std::ptr::null(),
-            initial_layout: vk::ImageLayout::UNDEFINED,
-        };
+                log::info!("format_info: {:?}", format_info);
 
-        let image = device
-            .create_image(&create_info, None)
-            .expect("Failed to create image");
+                // Create an image to bind to this AHardwareBuffer
+                let mut external_create_info = vk::ExternalMemoryImageCreateInfo::default();
+                external_create_info.handle_types =
+                    vk::ExternalMemoryHandleTypeFlags::ANDROID_HARDWARE_BUFFER_ANDROID;
+                let mut external_format = ExternalFormatANDROID::default();
+                external_format.p_next =
+                    <*mut vk::ExternalMemoryImageCreateInfo>::cast(&mut external_create_info);
 
-        // Allocate device memory
-        let mut import_info = vk::ImportAndroidHardwareBufferInfoANDROID::default();
-        import_info.buffer = buffer.as_ptr() as _;
-        let mut mem_allocate_info = vk::MemoryDedicatedAllocateInfo::default();
-        mem_allocate_info.p_next =
-            <*const vk::ImportAndroidHardwareBufferInfoANDROID>::cast(&import_info);
-        mem_allocate_info.image = image;
+                let create_info = vk::ImageCreateInfo {
+                    s_type: StructureType::IMAGE_CREATE_INFO,
+                    p_next: <*const ExternalFormatANDROID>::cast(&mut external_format),
+                    flags: vk::ImageCreateFlags::from_raw(0),
+                    image_type: vk::ImageType::TYPE_2D,
+                    format: match format_info.format {
+                        Format::UNDEFINED => {
+                            external_format.external_format = format_info.external_format;
+                            Format::UNDEFINED
+                        }
+                        _ => format_info.format,
+                    },
+                    // format: vk::Format::R8G8B8A8_UNORM,
+                    extent: vk::Extent3D {
+                        width,
+                        height,
+                        depth: 1,
+                    },
+                    mip_levels: 1,
+                    array_layers: desc.layers,
+                    samples: vk::SampleCountFlags::TYPE_1,
+                    tiling: vk::ImageTiling::OPTIMAL,
+                    usage: vk::ImageUsageFlags::SAMPLED
+                        | vk::ImageUsageFlags::TRANSFER_DST
+                        | vk::ImageUsageFlags::STORAGE,
+                    sharing_mode: vk::SharingMode::EXCLUSIVE,
+                    queue_family_index_count: 0,
+                    p_queue_family_indices: ::std::ptr::null(),
+                    initial_layout: vk::ImageLayout::UNDEFINED,
+                };
 
-        let mut allocate_info = vk::MemoryAllocateInfo {
-            s_type: StructureType::MEMORY_ALLOCATE_INFO,
-            p_next: <*const vk::MemoryDedicatedAllocateInfo>::cast(&mut mem_allocate_info),
-            allocation_size: properties_info.allocation_size,
-            // memory_type_index: {
-            //     let mem_req = device.get_image_memory_requirements(image);
-            //     find_memorytype_index(
-            //         mem_req.memory_type_bits,
-            //         &ac.pd_mem_properties,
-            //         vk::MemoryPropertyFlags::from_raw(0),
-            //     )
-            //     .expect("Failed to find image memorytype index")
-            // },
-            memory_type_index: find_memorytype_index(
-                properties_info.memory_type_bits,
-                &ac.pd_mem_properties,
-                vk::MemoryPropertyFlags::from_raw(0),
-            )
-            .expect("Failed to find image memorytype index"),
-        };
-        let device_mem = device
-            .allocate_memory(&allocate_info, None)
-            .expect("Failed to allocate image memory");
+                let image = device
+                    .create_image(&create_info, None)
+                    .expect("Failed to create image");
 
-        // Bind image to the device memory
-        device
-            .bind_image_memory(image, device_mem, 0)
-            .expect("Failed to bind image memory");
+                // Allocate device memory
+                let mut import_info = vk::ImportAndroidHardwareBufferInfoANDROID::default();
+                import_info.buffer = buffer.as_ptr() as _;
+                let mut mem_allocate_info = vk::MemoryDedicatedAllocateInfo::default();
+                mem_allocate_info.p_next =
+                    <*const vk::ImportAndroidHardwareBufferInfoANDROID>::cast(&import_info);
+                mem_allocate_info.image = image;
 
-        let sampler_info = if ac.ycbcr_conv_info.is_none() {
-            Some(create_ycbcr_sampler(device, &external_format, &format_info))
-        } else {
-            None
-        };
+                let allocate_info = vk::MemoryAllocateInfo {
+                    s_type: StructureType::MEMORY_ALLOCATE_INFO,
+                    p_next: <*const vk::MemoryDedicatedAllocateInfo>::cast(&mut mem_allocate_info),
+                    allocation_size: properties_info.allocation_size,
+                    // memory_type_index: {
+                    //     let mem_req = device.get_image_memory_requirements(image);
+                    //     find_memorytype_index(
+                    //         mem_req.memory_type_bits,
+                    //         &ac.pd_mem_properties,
+                    //         vk::MemoryPropertyFlags::from_raw(0),
+                    //     )
+                    //     .expect("Failed to find image memorytype index")
+                    // },
+                    memory_type_index: find_memorytype_index(
+                        properties_info.memory_type_bits,
+                        &ac.pd_mem_properties,
+                        vk::MemoryPropertyFlags::from_raw(0),
+                    )
+                    .expect("Failed to find image memorytype index"),
+                };
+                let device_mem = device
+                    .allocate_memory(&allocate_info, None)
+                    .expect("Failed to allocate image memory");
 
-        (image, format_info, sampler_info)
-    });
+                // Bind image to the device memory
+                device
+                    .bind_image_memory(image, device_mem, 0)
+                    .expect("Failed to bind image memory");
+
+                let sampler_info = if ac.ycbcr_conv_info.is_none() {
+                    Some(create_ycbcr_sampler(device, &external_format, &format_info))
+                } else {
+                    None
+                };
+
+                (image, format_info, sampler_info)
+            });
 
     if let Some((vk_sampler, ycbcr_conv_info)) = sampler_info {
         let hal_sampler = <<Vulkan as Api>::Device>::sampler_from_raw(vk_sampler, None);
-        let ycbcr_sampler = ac.device.create_sampler_from_hal::<Vulkan>(
-            hal_sampler,
-            &wgpu::SamplerDescriptor {
-                label: Some("create_sampler_from_hal"),
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Linear,
-                mipmap_filter: wgpu::FilterMode::Nearest,
-                ..Default::default()
-            },
-        );
+        let ycbcr_sampler = ac
+            .canvas
+            .app_surface
+            .device
+            .create_sampler_from_hal::<Vulkan>(
+                hal_sampler,
+                &wgpu::SamplerDescriptor {
+                    label: Some("create_sampler_from_hal"),
+                    address_mode_u: wgpu::AddressMode::ClampToEdge,
+                    address_mode_v: wgpu::AddressMode::ClampToEdge,
+                    address_mode_w: wgpu::AddressMode::ClampToEdge,
+                    mag_filter: wgpu::FilterMode::Linear,
+                    min_filter: wgpu::FilterMode::Linear,
+                    mipmap_filter: wgpu::FilterMode::Nearest,
+                    ..Default::default()
+                },
+            );
         ac.set_ycbcr_sampler(ycbcr_sampler, ycbcr_conv_info);
     }
 
@@ -174,62 +181,74 @@ unsafe fn create_texture_and_view(
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format,
-        usage: hal::TextureUses::RESOURCE | hal::TextureUses::STORAGE_READ_WRITE,
-        memory_flags: hal::MemoryFlags::PREFER_COHERENT,
+        usage: hal::TextureUses::COPY_DST
+            | hal::TextureUses::RESOURCE
+            | hal::TextureUses::STORAGE_READ_WRITE,
+        memory_flags: hal::MemoryFlags::empty(),
     };
 
     let hal_texture = <<Vulkan as Api>::Device>::texture_from_raw(image, &texture_desc, None);
 
-    let hal_texture_view = ac.device.as_hal::<Vulkan, _, _>(|device| {
-        let hal_device = device.unwrap();
+    let hal_texture_view = ac
+        .canvas
+        .app_surface
+        .device
+        .as_hal::<Vulkan, _, _>(|device| {
+            let hal_device = device.unwrap();
 
-        let img_view_info = vk::ImageViewCreateInfo {
-            s_type: StructureType::IMAGE_VIEW_CREATE_INFO,
-            p_next: <*const SamplerYcbcrConversionInfo>::cast(ac.ycbcr_conv_info.as_ref().unwrap()),
-            flags: vk::ImageViewCreateFlags::default(),
-            image,
-            view_type: vk::ImageViewType::TYPE_2D,
-            format: format_info.format,
-            components: vk::ComponentMapping::default(),
-            subresource_range: vk::ImageSubresourceRange {
-                aspect_mask: vk::ImageAspectFlags::COLOR,
-                base_mip_level: 0,
-                level_count: 1,
-                base_array_layer: 0,
-                layer_count: 1,
-            },
-        };
-        let vk_img_view = hal_device
-            .raw_device()
-            .create_image_view(&img_view_info, None)
-            .expect("Failed to create vk image view");
+            let img_view_info = vk::ImageViewCreateInfo {
+                s_type: StructureType::IMAGE_VIEW_CREATE_INFO,
+                p_next: <*const SamplerYcbcrConversionInfo>::cast(
+                    ac.ycbcr_conv_info.as_ref().unwrap(),
+                ),
+                flags: vk::ImageViewCreateFlags::default(),
+                image,
+                view_type: vk::ImageViewType::TYPE_2D,
+                format: format_info.format,
+                components: vk::ComponentMapping::default(),
+                subresource_range: vk::ImageSubresourceRange {
+                    aspect_mask: vk::ImageAspectFlags::COLOR,
+                    base_mip_level: 0,
+                    level_count: 1,
+                    base_array_layer: 0,
+                    layer_count: 1,
+                },
+            };
 
-        hal_device.texture_view_from_raw(
-            &hal_texture,
-            vk_img_view,
-            &hal::TextureViewDescriptor {
-                label: Some("hal::TextureViewDescriptor"),
+            let vk_img_view = hal_device
+                .raw_device()
+                .create_image_view(&img_view_info, None)
+                .expect("Failed to create vk image view");
+            hal_device.texture_view_from_raw(
+                &hal_texture,
+                vk_img_view,
+                &hal::TextureViewDescriptor {
+                    label: Some("hal::TextureViewDescriptor"),
+                    format,
+                    dimension: wgpu::TextureViewDimension::D2,
+                    usage: hal::TextureUses::RESOURCE | hal::TextureUses::STORAGE_READ_WRITE,
+                    range: wgpu::ImageSubresourceRange::default(),
+                },
+                None,
+            )
+        });
+
+    let texture = ac
+        .canvas
+        .app_surface
+        .device
+        .create_texture_from_hal::<Vulkan>(
+            hal_texture,
+            &wgpu::TextureDescriptor {
+                label: Some("AHardwareBuffer imported texture"),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
                 format,
-                dimension: wgpu::TextureViewDimension::D2,
-                usage: hal::TextureUses::RESOURCE | hal::TextureUses::STORAGE_READ_WRITE,
-                range: wgpu::ImageSubresourceRange::default(),
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::STORAGE_BINDING,
             },
-            None,
-        )
-    });
-
-    let texture = ac.device.create_texture_from_hal::<Vulkan>(
-        hal_texture,
-        &wgpu::TextureDescriptor {
-            label: Some("AHardwareBuffer imported texture"),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::STORAGE_BINDING,
-        },
-    );
+        );
 
     let view = texture
         .create_view_from_hal::<Vulkan>(hal_texture_view, &wgpu::TextureViewDescriptor::default());

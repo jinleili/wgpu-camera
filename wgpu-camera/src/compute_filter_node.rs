@@ -1,11 +1,6 @@
 use crate::display_node::DisplayNode;
 use app_surface::AppSurface;
-use bytemuck::Pod;
-use idroid::{
-    geometry::Plane,
-    vertex::{PosTex, Vertex},
-    BufferObj,
-};
+use idroid::vertex::PosTex;
 use std::collections::HashMap;
 use wgpu::{BindGroupLayout, Buffer, ShaderModule, Texture};
 
@@ -82,7 +77,7 @@ impl ComputeFilterNode {
 }
 
 impl crate::FilterNode for ComputeFilterNode {
-    fn change_filter(&mut self, app_surface: &AppSurface, shader_module: &wgpu::ShaderModule) {}
+    fn change_filter(&mut self, _app_surface: &AppSurface, _shader_module: &wgpu::ShaderModule) {}
 
     fn update_viewport(&mut self, viewport: (f32, f32, f32, f32)) {
         self.display_node.viewport = viewport;
@@ -120,7 +115,7 @@ impl crate::FilterNode for ComputeFilterNode {
         self.bind_groups.insert(tex_key, bind_group);
     }
 
-    fn remove_bind_group(&mut self, tex_key: String) {}
+    fn remove_bind_group(&mut self, _tex_key: String) {}
 
     fn enter_frame(
         &mut self,

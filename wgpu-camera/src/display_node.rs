@@ -1,7 +1,6 @@
 use app_surface::AppSurface;
 use bytemuck::Pod;
 use idroid::{geometry::Plane, vertex::Vertex, BufferObj};
-use wgc::binding_model::BindGroup;
 use wgpu::util::DeviceExt;
 use wgpu::{
     BindingType, Buffer, BufferBindingType, PipelineLayout, ShaderModule, ShaderStages, Texture,

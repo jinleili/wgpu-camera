@@ -1,8 +1,6 @@
 use app_surface::AppSurface;
-use idroid::vertex::Vertex;
 use wgpu::{Buffer, Texture};
 mod wgpu_canvas;
-use bytemuck::Pod;
 pub use wgpu_canvas::WgpuCanvas;
 
 #[cfg_attr(target_os = "ios", path = "ffi/ios.rs")]

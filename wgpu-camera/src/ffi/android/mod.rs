@@ -4,7 +4,7 @@ use app_surface::AppSurface;
 use ash::vk;
 use hal::api::Vulkan;
 use jni::objects::JClass;
-use jni::sys::{jint, jlong, jobject};
+use jni::sys::{jlong, jobject};
 use jni::JNIEnv;
 use jni_fn::jni_fn;
 use log::{info, Level};
@@ -18,18 +18,12 @@ const TEX_KEY: &'static str = "any string";
 #[cfg_attr(target_os = "android", path = "vk_image.rs")]
 mod vk_image;
 
-#[cfg_attr(target_os = "android", path = "util.rs")]
-mod util;
-
 pub(crate) struct AndroidCamera {
     canvas: WgpuCanvas,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
     pd_mem_properties: vk::PhysicalDeviceMemoryProperties,
     ahb_fn: vk::AndroidExternalMemoryAndroidHardwareBufferFn,
     session_output: SessionOutput,
     camera: CameraManager,
-    ycbcr_sampler: Option<wgpu::Sampler>,
     ycbcr_conv_info: Option<vk::SamplerYcbcrConversionInfo>,
 }
 
@@ -50,21 +44,23 @@ pub fn create_cameracanvas(env: *mut JNIEnv, _: JClass, surface: jobject) -> jlo
     android_logger::init_once(Config::default().with_min_level(Level::Trace));
     log_panics::init();
 
-    let canvas = WgpuCanvas::new(AppSurface::new(env as *mut _, surface));
+    let mut canvas = WgpuCanvas::new(AppSurface::new(env as *mut _, surface));
     info!("WgpuCanvas created!");
 
-    let device_desc = wgpu::DeviceDescriptor::default();
-    let instance = util::create_instance();
-    let (device, queue) = util::create_device(&instance, &device_desc);
+    // let device_desc = wgpu::DeviceDescriptor::default();
+    // let instance = util::create_instance();
+    // let (device, queue) = util::create_device(&instance, &device_desc);
 
     // Load vkGetAndroidHardwareBufferXXX functions.
     let (ahb_fn, pd_mem_properties) = unsafe {
-        let raw_instance = instance
+        let raw_instance = canvas
+            .app_surface
+            .instance
             .as_hal::<Vulkan>()
             .unwrap()
             .shared_instance()
             .raw_instance();
-        device.as_hal::<Vulkan, _, _>(|device| {
+        canvas.app_surface.device.as_hal::<Vulkan, _, _>(|device| {
             let handle = device.unwrap().raw_device().handle();
             let load_fn = |name: &std::ffi::CStr| {
                 std::mem::transmute(raw_instance.get_device_proc_addr(handle, name.as_ptr()))
@@ -84,15 +80,14 @@ pub fn create_cameracanvas(env: *mut JNIEnv, _: JClass, surface: jobject) -> jlo
         let camera = CameraManager::new(&output.native_window);
         (camera, output)
     };
+    canvas.set_camera_sensor_orientation(camera.sensor_orientation as f32);
+
     let android_canvas = AndroidCamera {
         canvas,
-        device,
-        queue,
         pd_mem_properties,
         ahb_fn,
         session_output,
         camera,
-        ycbcr_sampler: None,
         ycbcr_conv_info: None,
     };
     Box::into_raw(Box::new(android_canvas)) as jlong
@@ -118,6 +113,15 @@ pub fn start_capturing(_env: *mut JNIEnv, _: JClass, obj: jlong) {
 
 #[no_mangle]
 #[jni_fn("name.jinleili.wgpu_camera.RustBridge")]
+pub fn stop_capturing(_env: *mut JNIEnv, _: JClass, obj: jlong) {
+    let wgpu_obj = unsafe { &mut *(obj as *mut AndroidCamera) };
+    unsafe {
+        wgpu_obj.camera.stop_capturing();
+    }
+}
+
+#[no_mangle]
+#[jni_fn("name.jinleili.wgpu_camera.RustBridge")]
 pub fn enter_frame(_env: *mut JNIEnv, _: JClass, obj: jlong) {
     let mut wgpu_obj = unsafe { &mut *(obj as *mut AndroidCamera) };
     unsafe {
@@ -129,6 +133,7 @@ pub fn enter_frame(_env: *mut JNIEnv, _: JClass, obj: jlong) {
             wgpu_obj.canvas.set_external_tv(
                 texture,
                 Some(view),
+                // None,
                 TEX_KEY.to_string(),
                 (size.0 as f32, size.1 as f32),
             );

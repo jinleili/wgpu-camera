@@ -1,27 +1,26 @@
-use super::SessionOutput;
-use ash::vk;
 use ndk::native_window::NativeWindow;
 use ndk_sys::{
     camera_status_t, ACameraCaptureFailure, ACameraCaptureSession,
     ACameraCaptureSession_captureCallbacks, ACameraCaptureSession_stateCallbacks, ACameraDevice,
-    ACameraDevice_ErrorStateCallback, ACameraDevice_StateCallback, ACameraDevice_StateCallbacks,
-    ACameraMetadata, ACameraWindowType, ACaptureRequest, ANativeWindow,
+    ACameraDevice_StateCallbacks, ACameraMetadata, ACameraWindowType, ACaptureRequest,
 };
 use std::mem::MaybeUninit;
-use std::os::raw::{c_char, c_int, c_uint, c_void};
+use std::os::raw::{c_int, c_uint, c_void};
 
 #[link(name = "camera2ndk")]
 extern "C" {}
 
-pub struct CameraManager {
+pub(crate) struct CameraManager {
     capture_session: *mut ACameraCaptureSession,
     request: *mut ACaptureRequest,
+    pub sensor_orientation: i32,
 }
 
 impl CameraManager {
     pub unsafe fn new(native_window: &NativeWindow) -> Self {
         let manager = ndk_sys::ACameraManager_create();
         let mut ids = MaybeUninit::uninit();
+
         let res = ndk_sys::ACameraManager_getCameraIdList(manager, ids.as_mut_ptr());
         if res != camera_status_t::ACAMERA_OK {
             log::error!("Failed to acquire camera list.");
@@ -30,10 +29,57 @@ impl CameraManager {
         if (*ids).numCameras < 1 {
             log::error!("No cameras found.")
         }
+        // Select back-facing camera
+        let back_facing =
+            ndk_sys::acamera_metadata_enum_acamera_lens_facing::ACAMERA_LENS_FACING_BACK.0 as u8;
+        let ids_slice = std::slice::from_raw_parts((*ids).cameraIds, (*ids).numCameras as _);
+        let mut selected_camera = ids_slice[0];
+        let mut sensor_orientation = 0_i32;
+        for i in 0..(*ids).numCameras {
+            let id = ids_slice[i as usize];
+            let mut metadata = MaybeUninit::uninit();
+            let res = ndk_sys::ACameraManager_getCameraCharacteristics(
+                manager,
+                id,
+                metadata.as_mut_ptr(),
+            );
+            if res != camera_status_t::ACAMERA_OK {
+                continue;
+            }
+            let metadata = metadata.assume_init();
+            let mut entry = MaybeUninit::uninit();
+            let res = ndk_sys::ACameraMetadata_getConstEntry(
+                metadata,
+                ndk_sys::acamera_metadata_tag::ACAMERA_LENS_FACING.0 as _,
+                entry.as_mut_ptr(),
+            );
+            if res == camera_status_t::ACAMERA_OK {
+                let entry: ndk_sys::ACameraMetadata_const_entry = entry.assume_init();
+                let slice = std::slice::from_raw_parts(entry.data.u8_, 1);
+                let facing = slice[0];
+                if facing == back_facing {
+                    selected_camera = id;
+
+                    // Get camera sensor orientation angle
+                    let mut rotation = MaybeUninit::uninit();
+                    if ndk_sys::ACameraMetadata_getConstEntry(
+                        metadata,
+                        ndk_sys::acamera_metadata_tag::ACAMERA_SENSOR_ORIENTATION.0 as _,
+                        rotation.as_mut_ptr(),
+                    ) == camera_status_t::ACAMERA_OK
+                    {
+                        let rotation = rotation.assume_init();
+                        sensor_orientation = std::slice::from_raw_parts(rotation.data.i32_, 1)[0];
+                        log::info!("sensor_orientation: {}", sensor_orientation);
+                    }
+                }
+            }
+            ndk_sys::ACameraMetadata_free(metadata);
+        }
+        // Delete IdList will cause open camera failure
+        // ndk_sys::ACameraManager_deleteCameraIdList(ids);
 
         // Open camera device
-        let slice = unsafe { std::slice::from_raw_parts((*ids).cameraIds, (*ids).numCameras as _) };
-        let selected_camera = slice[1];
         let mut device = MaybeUninit::uninit();
         let mut res = ndk_sys::ACameraManager_openCamera(
             manager,
@@ -105,11 +151,11 @@ impl CameraManager {
         if res != camera_status_t::ACAMERA_OK {
             log::error!("Couldn't add capture request to camera output target.");
         }
-        log::info!("xxxxx xxxxx");
 
         Self {
             capture_session,
             request,
+            sensor_orientation,
         }
     }
 
@@ -139,13 +185,13 @@ impl CameraManager {
 }
 
 fn get_device_callbacks() -> *mut ACameraDevice_StateCallbacks {
-    extern "C" fn on_device_state_changes(ctx: *mut c_void, dev: *mut ACameraDevice) {
+    extern "C" fn on_device_state_changes(_ctx: *mut c_void, _dev: *mut ACameraDevice) {
         // TODO...
         // let camera = Box::from_raw(ctx);
         log::info!(" camera on_device_state_changes");
     }
 
-    extern "C" fn on_device_error_changes(ctx: *mut c_void, dev: *mut ACameraDevice, err: i32) {
+    extern "C" fn on_device_error_changes(_ctx: *mut c_void, _dev: *mut ACameraDevice, err: i32) {
         match err as c_uint {
             ndk_sys::ERROR_CAMERA_DEVICE | ndk_sys::ERROR_CAMERA_SERVICE => {
                 log::error!("Camera device has encountered a fatal error, .")
@@ -176,21 +222,21 @@ fn get_device_callbacks() -> *mut ACameraDevice_StateCallbacks {
 
 fn get_state_callbacks() -> *mut ACameraCaptureSession_stateCallbacks {
     unsafe extern "C" fn on_session_ready(
-        context: *mut c_void,
-        session: *mut ACameraCaptureSession,
+        _context: *mut c_void,
+        _session: *mut ACameraCaptureSession,
     ) {
         // 每当没有捕捉请求处理时都会回调该方法
         log::info!("camera on_session_ready");
     }
     unsafe extern "C" fn on_session_active(
-        context: *mut c_void,
-        session: *mut ACameraCaptureSession,
+        _context: *mut c_void,
+        _session: *mut ACameraCaptureSession,
     ) {
         log::info!("camera on_session_active");
     }
     unsafe extern "C" fn on_session_close(
-        context: *mut c_void,
-        session: *mut ACameraCaptureSession,
+        _context: *mut c_void,
+        _session: *mut ACameraCaptureSession,
     ) {
         log::info!("camera on_session_close");
     }
@@ -209,42 +255,42 @@ fn get_state_callbacks() -> *mut ACameraCaptureSession_stateCallbacks {
 
 fn get_capture_callbacks() -> *mut ACameraCaptureSession_captureCallbacks {
     unsafe extern "C" fn on_capture_started(
-        context: *mut ::std::os::raw::c_void,
-        session: *mut ACameraCaptureSession,
-        request: *const ACaptureRequest,
-        timestamp: i64,
+        _context: *mut ::std::os::raw::c_void,
+        _session: *mut ACameraCaptureSession,
+        _request: *const ACaptureRequest,
+        _timestamp: i64,
     ) {
         log::info!("camera on_capture_started");
     }
     unsafe extern "C" fn on_capture_result(
-        context: *mut ::std::os::raw::c_void,
-        session: *mut ACameraCaptureSession,
-        request: *mut ACaptureRequest,
-        result: *const ACameraMetadata,
+        _context: *mut ::std::os::raw::c_void,
+        _session: *mut ACameraCaptureSession,
+        _request: *mut ACaptureRequest,
+        _result: *const ACameraMetadata,
     ) {
         log::info!("camera on_capture_result");
     }
     unsafe extern "C" fn on_capture_failed(
-        context: *mut ::std::os::raw::c_void,
-        session: *mut ACameraCaptureSession,
-        request: *mut ACaptureRequest,
+        _context: *mut ::std::os::raw::c_void,
+        _session: *mut ACameraCaptureSession,
+        _request: *mut ACaptureRequest,
         failure: *mut ACameraCaptureFailure,
     ) {
         log::error!("camera on_capture_failed: {:?}", failure);
     }
     unsafe extern "C" fn on_capture_abort(
-        context: *mut ::std::os::raw::c_void,
-        session: *mut ACameraCaptureSession,
-        sequenceId: ::std::os::raw::c_int,
+        _context: *mut ::std::os::raw::c_void,
+        _session: *mut ACameraCaptureSession,
+        _sequenceId: ::std::os::raw::c_int,
     ) {
         log::error!("camera on_capture_abort");
     }
     unsafe extern "C" fn on_capture_buffer_lost(
-        context: *mut ::std::os::raw::c_void,
-        session: *mut ACameraCaptureSession,
-        request: *mut ACaptureRequest,
-        window: *mut ACameraWindowType,
-        frameNumber: i64,
+        _context: *mut ::std::os::raw::c_void,
+        _session: *mut ACameraCaptureSession,
+        _request: *mut ACaptureRequest,
+        _window: *mut ACameraWindowType,
+        _frameNumber: i64,
     ) {
         log::error!("camera on_capture_buffer_lost");
     }

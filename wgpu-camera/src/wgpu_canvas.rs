@@ -2,8 +2,8 @@ use crate::{
     fragment_filter_node::FragmentFilterNode, shader_manager::ShaderManager, FilterNode, FilterType,
 };
 use app_surface::{AppSurface, SurfaceFrame};
-use idroid::vertex::PosTex;
 use idroid::{BufferObj, MVPUniform};
+use nalgebra_glm as glm;
 
 pub struct WgpuCanvas {
     pub app_surface: AppSurface,
@@ -20,11 +20,12 @@ pub struct WgpuCanvas {
 impl WgpuCanvas {
     pub fn new(app_surface: AppSurface) -> Self {
         let shader_manager = ShaderManager::new(&app_surface.device);
-        let screen_mvp = idroid::utils::matrix_helper::fullscreen_mvp((&app_surface.config).into());
+        let (p_mat, vm_mat) =
+            idroid::utils::matrix_helper::perspective_fullscreen_mvp((&app_surface.config).into());
         let mvp_buffer = BufferObj::create_uniform_buffer(
             &app_surface.device,
             &MVPUniform {
-                mvp_matrix: screen_mvp.into(),
+                mvp_matrix: (p_mat * vm_mat).into(),
             },
             Some("MVPUniformObj"),
         );
@@ -51,6 +52,24 @@ impl WgpuCanvas {
             callback(0);
         }
         instance
+    }
+
+    pub fn set_camera_sensor_orientation(&mut self, angle: f32) {
+        let (p_mat, mut vm_mat) = idroid::utils::matrix_helper::perspective_fullscreen_mvp(
+            (&self.app_surface.config).into(),
+        );
+        vm_mat = glm::rotate(
+            &vm_mat,
+            angle / 180.0 * (-std::f32::consts::PI),
+            &glm::vec3(0.0, 0.0, 1.0),
+        );
+
+        let uniform: [[f32; 4]; 4] = (p_mat * vm_mat).into();
+        self.app_surface.queue.write_buffer(
+            &self.mvp_buffer.buffer,
+            0,
+            bytemuck::cast_slice(&uniform),
+        );
     }
 
     pub fn set_filter(
